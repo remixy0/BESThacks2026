@@ -1,0 +1,4 @@
+# Never commit secrets, wherever they are
+**/Secrets.plist
+.DS_Store
+resources/
