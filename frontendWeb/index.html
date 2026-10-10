@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Muzeum</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background-color: #f0f2f5; 
+            color: #202124; 
+            margin: 0; 
+            padding: 0; 
+        }
+        
+        #dashboard-screen { padding: 20px; max-width: 1600px; margin: 0 auto; }
+        
+        .header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: #1a1c23; color: white; padding: 20px 25px; 
+            border-radius: 12px; margin-bottom: 25px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .header h2 { margin: 0; font-size: 24px; font-weight: 500; letter-spacing: 0.5px; }
+        
+        .controls { display: flex; gap: 15px; margin-bottom: 25px; }
+        .controls button { 
+            padding: 12px 24px; font-size: 15px; cursor: pointer; border: 1px solid #e0e0e0; 
+            border-radius: 8px; background: white; font-weight: 600; color: #444;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: all 0.2s ease;
+        }
+        .controls button:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); color: #111; }
+        .controls button.active { background: #ef4444; color: white; border-color: #dc2626; }
+        .controls button#global-alert-btn { background: #dc2626; color: white; border-color: #b91c1c; }
+        .controls button#global-alert-btn:hover { background: #b91c1c; }
+        
+        .content-wrapper { display: flex; gap: 25px; align-items: stretch; }
+        
+        #map-container { 
+            flex: 2.5; 
+            background: #ffffff; 
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08); 
+            border: 1px solid #e5e7eb;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .museum-background { fill: #2c313c; } 
+        .doorway { fill: #f3f4f6; }
+        
+        .zone { 
+            transition: all 0.3s ease; 
+            cursor: pointer; 
+            filter: drop-shadow(0px 0px 8px rgba(0,0,0,0.15) inset);
+        }
+        
+        #zone-Hintze { fill: url(#wood-pattern); }
+        .side-room { fill: url(#tile-pattern); }
+        
+        .furniture { fill: #d1d5db; stroke: #9ca3af; stroke-width: 1.5; pointer-events: none; }
+        .glass-case { fill: #e0f2fe; fill-opacity: 0.5; stroke: #7dd3fc; stroke-width: 2; pointer-events: none; }
+        .plant { fill: #86efac; stroke: #22c55e; stroke-width: 1.5; pointer-events: none; }
+        
+        .zone:hover { opacity: 0.9; filter: brightness(1.05); }
+        .zone.danger { fill: #fecdd3 !important; stroke: #e11d48 !important; stroke-width: 6 !important; }
+        .zone.global-danger { fill: #fda4af !important; stroke: #be123c !important; stroke-width: 8 !important; animation: pulse-bg 1.5s infinite; }
+        
+        .label { font-size: 20px; font-weight: 600; fill: #1f2937; pointer-events: none; text-anchor: middle; font-family: 'Segoe UI', sans-serif; letter-spacing: 0.5px; }
+        .label-sub { font-size: 13px; fill: #4b5563; pointer-events: none; text-anchor: middle; }
+        
+        /* Wygląd kropki zarejestrowanej osoby */
+        .visitor { fill: #3b82f6; stroke: #ffffff; stroke-width: 2; cursor: pointer; transition: r 0.2s; }
+        .visitor:hover { fill: #2563eb; r: 10; }
+        
+        @keyframes pulse-bg { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        @keyframes flash-help { 0% { fill: #fde047; stroke: #ca8a04; r: 16; } 50% { fill: #ef4444; stroke: #fff; r: 22; } 100% { fill: #fde047; stroke: #ca8a04; r: 16; } }
+        
+        .help-marker { stroke-width: 3; cursor: pointer; animation: flash-help 1s infinite; }
+
+        .side-panel { display: flex; flex-direction: column; gap: 20px; flex: 1; min-width: 350px; }
+        
+        .info-box { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; }
+        .info-box h3 { margin-top: 0; color: #111827; font-size: 20px; }
+        .info-box p { color: #4b5563; line-height: 1.6; margin-bottom: 0; font-size: 15px; }
+
+        /* Style dla nowej sekcji logowania gości */
+        .visitor-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px; }
+        .add-btn { background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+        .add-btn:hover { background: #2563eb; }
+        .visitor-list { list-style: none; padding: 0; margin: 0; font-size: 14px; max-height: 180px; overflow-y: auto; }
+        .visitor-list li { padding: 8px 0; border-bottom: 1px solid #f3f4f6; color: #374151; display: flex; align-items: center; }
+        .visitor-list li::before { content: "•"; color: #3b82f6; font-size: 20px; margin-right: 10px; }
+        
+        .log-box { 
+            background: #111827; color: #34d399; padding: 20px; 
+            border-radius: 12px; flex-grow: 1; font-family: 'Consolas', monospace; 
+            overflow-y: auto; max-height: 400px; border: 1px solid #1f2937;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.3);
+        }
+        .log-box h3 { margin-top: 0; color: #f9fafb; border-bottom: 1px solid #374151; padding-bottom: 12px; font-size: 15px; }
+        .log-list { list-style: none; padding: 0; margin: 0; font-size: 13px; line-height: 1.6; }
+        .log-danger { color: #f87171; font-weight: bold; }
+        .log-safe { color: #34d399; }
+        .log-info { color: #38bdf8; }
+        .log-warning { color: #fbbf24; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="dashboard-screen">
+        <div class="header">
+            <h2>Panel Sterowania (Admin) - Muzeum</h2>
+        </div>
+
+        <div class="controls">
+            <button id="danger-btn" onclick="toggleDangerMode()">Tryb oznaczania stref: WYŁĄCZONY</button>
+            <button id="global-alert-btn" onclick="triggerGlobalAlert()">SYSTEM OSTRZEGANIA: EWAKUACJA</button>
+            <button onclick="simulateHelpRequest()">Symuluj: Zgłoszenie o pomoc (SOS)</button>
+        </div>
+
+        <div class="content-wrapper">
+            <div id="map-container">
+                <svg id="museum-map" width="100%" height="100%" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <pattern id="wood-pattern" patternUnits="userSpaceOnUse" width="40" height="20" patternTransform="rotate(45)">
+                            <rect width="40" height="20" fill="#e5d3b3" />
+                            <rect width="40" height="20" fill="none" stroke="#d4b88c" stroke-width="0.7" />
+                            <line x1="20" y1="0" x2="20" y2="20" stroke="#d4b88c" stroke-width="0.7" />
+                        </pattern>
+                        <pattern id="tile-pattern" patternUnits="userSpaceOnUse" width="30" height="30">
+                            <rect width="30" height="30" fill="#f8f9fa" />
+                            <rect width="30" height="30" fill="none" stroke="#e9ecef" stroke-width="1" />
+                        </pattern>
+                        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.15" />
+                        </filter>
+                    </defs>
+
+                    <rect class="museum-background" x="40" y="40" width="1120" height="720" rx="40" ry="40" filter="url(#shadow)" />
+
+                    <polygon class="zone" id="zone-Hintze" points="380,220 820,220 980,400 820,580 380,580 220,400" onclick="handleZoneClick(this, 'Hintze Hall')" />
+                    <path class="zone side-room" id="zone-Darwin" d="M 120,120 L 360,120 L 360,200 Q 240,230 200,360 L 120,360 Z" onclick="handleZoneClick(this, 'Darwin Centre')" />
+                    <path class="zone side-room" id="zone-Earth" d="M 1080,120 L 840,120 L 840,200 Q 960,230 1000,360 L 1080,360 Z" onclick="handleZoneClick(this, 'Earth Hall')" />
+                    <path class="zone side-room" id="zone-Dinosaurs" d="M 120,680 L 360,680 L 360,600 Q 240,570 200,440 L 120,440 Z" onclick="handleZoneClick(this, 'Dinosaurs')" />
+                    <path class="zone side-room" id="zone-Fossil" d="M 1080,680 L 840,680 L 840,600 Q 960,570 1000,440 L 1080,440 Z" onclick="handleZoneClick(this, 'Fossil Marine Reptiles')" />
+
+                    <polygon class="doorway" points="340,200 360,200 380,220 360,220" />
+                    <line x1="340" y1="200" x2="360" y2="220" stroke="#4b5563" stroke-width="1.5" />
+                    <polygon class="doorway" points="860,200 840,200 820,220 840,220" />
+                    <line x1="860" y1="200" x2="840" y2="220" stroke="#4b5563" stroke-width="1.5" />
+                    <polygon class="doorway" points="340,600 360,600 380,580 360,580" />
+                    <line x1="340" y1="600" x2="360" y2="580" stroke="#4b5563" stroke-width="1.5" />
+                    <polygon class="doorway" points="860,600 840,600 820,580 840,580" />
+                    <line x1="860" y1="600" x2="840" y2="580" stroke="#4b5563" stroke-width="1.5" />
+
+                    <!-- Meble -->
+                    <rect class="glass-case" x="480" y="360" width="240" height="80" rx="8" filter="url(#shadow)" />
+                    <rect class="furniture" x="500" y="375" width="200" height="50" rx="4" />
+                    <line x1="600" y1="360" x2="600" y2="440" stroke="#7dd3fc" stroke-width="1" />
+                    
+                    <rect class="glass-case" x="420" y="240" width="100" height="40" rx="4" filter="url(#shadow)" />
+                    <rect class="glass-case" x="680" y="240" width="100" height="40" rx="4" filter="url(#shadow)" />
+                    <rect class="glass-case" x="420" y="520" width="100" height="40" rx="4" filter="url(#shadow)" />
+                    <rect class="glass-case" x="680" y="520" width="100" height="40" rx="4" filter="url(#shadow)" />
+
+                    <rect class="glass-case" x="140" y="140" width="120" height="30" rx="4" filter="url(#shadow)" />
+                    <rect class="glass-case" x="140" y="630" width="120" height="30" rx="4" filter="url(#shadow)" />
+                    <rect class="glass-case" x="940" y="140" width="120" height="30" rx="4" filter="url(#shadow)" />
+                    <rect class="glass-case" x="940" y="630" width="120" height="30" rx="4" filter="url(#shadow)" />
+
+                    <circle class="furniture" cx="300" cy="400" r="16" filter="url(#shadow)" />
+                    <circle class="furniture" cx="900" cy="400" r="16" filter="url(#shadow)" />
+                    <circle class="furniture" cx="280" cy="180" r="16" filter="url(#shadow)" />
+                    <circle class="furniture" cx="920" cy="180" r="16" filter="url(#shadow)" />
+
+                    <circle class="plant" cx="370" cy="240" r="10" filter="url(#shadow)" />
+                    <circle class="plant" cx="830" cy="240" r="10" filter="url(#shadow)" />
+                    <circle class="plant" cx="370" cy="560" r="10" filter="url(#shadow)" />
+                    <circle class="plant" cx="830" cy="560" r="10" filter="url(#shadow)" />
+
+                    <!-- Etykiety -->
+                    <rect x="520" y="475" width="160" height="30" fill="#ffffff" fill-opacity="0.7" rx="15" pointer-events="none" />
+                    <text x="600" y="496" class="label">Hintze Hall</text>
+                    <rect x="135" y="195" width="150" height="25" fill="#ffffff" fill-opacity="0.7" rx="12" pointer-events="none" />
+                    <text x="210" y="213" class="label" style="font-size: 16px;">Darwin Centre</text>
+                    <rect x="915" y="195" width="150" height="25" fill="#ffffff" fill-opacity="0.7" rx="12" pointer-events="none" />
+                    <text x="990" y="213" class="label" style="font-size: 16px;">Earth Hall</text>
+                    <rect x="135" y="585" width="150" height="25" fill="#ffffff" fill-opacity="0.7" rx="12" pointer-events="none" />
+                    <text x="210" y="603" class="label" style="font-size: 16px;">Dinosaurs</text>
+                    <rect x="915" y="585" width="150" height="25" fill="#ffffff" fill-opacity="0.7" rx="12" pointer-events="none" />
+                    <text x="990" y="603" class="label" style="font-size: 16px;">Fossil Marine</text>
+
+                    <!-- Warstwa gości zarządzana przez administratora -->
+                    <g id="visitors-layer"></g>
+                    <g id="help-layer"></g>
+                </svg>
+            </div>
+
+            <div class="side-panel">
+                
+                <!-- NOWY PANEL DO ZARZĄDZANIA GOŚĆMI -->
+                <div class="info-box">
+                    <div class="visitor-panel-header">
+                        <h3 style="margin: 0;">Lista Zwiedzających</h3>
+                        <button class="add-btn" onclick="addVisitor()">+ Dodaj</button>
+                    </div>
+                    <ul class="visitor-list" id="active-visitors-list">
+                        <li style="color: #9ca3af; font-style: italic;">Brak zalogowanych osób. Kliknij "+ Dodaj", aby wpisać gościa.</li>
+                    </ul>
+                </div>
+
+                <div class="info-box">
+                    <h3 id="room-title">Szczegóły obiektu</h3>
+                    <p id="room-desc">Kliknij strefę, aby zobaczyć szczegóły, lub kliknij kropkę gościa, aby zobaczyć jego dane.</p>
+                </div>
+
+                <div class="log-box">
+                    <h3>Dziennik zdarzeń serwera</h3>
+                    <ul class="log-list" id="log-list">
+                        <li class="log-info">[System] Nawiązano połączenie. Moduł śledzenia gości gotowy.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const roomDescriptions = {
+            "Hintze Hall": "Główna hala wystawowa z parkietem ułożonym w jodełkę. W centralnej części znajdują się duże szklane gabloty z głównymi eksponatami sezonu.",
+            "Dinosaurs": "Wystawa paleontologiczna. Gabloty ścienne zawierają mniejsze skamieniałości i interaktywne panele edukacyjne.",
+            "Darwin Centre": "Nowoczesne archiwum z jasnymi płytkami ceramicznymi. Znajdują się tu stanowiska badawcze i zbiory botaniczne.",
+            "Fossil Marine Reptiles": "Hala ekspozycyjna z jasnymi płytkami. Zawiera dobrze oświetlone gabloty prezentujące prehistoryczną faunę morską.",
+            "Earth Hall": "Przestrzeń geologiczna. Gabloty boczne eksponują rzadkie minerały, kamienie szlachetne i fragmenty meteorytów."
+        };
+
+        // Baza wprowadzonych manualnie gości
+        let activeVisitors = [];
+        let dangerModeActive = false;
+        let globalAlertActive = false;
+
+        function addLog(message, cssClass) {
+            const ul = document.getElementById('log-list');
+            const li = document.createElement('li');
+            li.className = cssClass;
+            li.innerText = `[${new Date().toLocaleTimeString('pl-PL')}] ${message}`;
+            ul.prepend(li);
+        }
+
+        // Funkcja do dodawania nowej osoby
+        function addVisitor() {
+            const name = prompt("Podaj imię i nazwisko wchodzącego zwiedzającego:");
+            if (name && name.trim() !== "") {
+                const newVisitor = {
+                    id: "usr-" + Date.now(),
+                    name: name.trim(),
+                    // Losowa pozycja startowa blisko głównego wejścia (środek-dół)
+                    x: Math.random() * 200 + 500,
+                    y: Math.random() * 100 + 500
+                };
+                activeVisitors.push(newVisitor);
+                updateVisitorListUI();
+                renderVisitorsOnMap();
+                addLog(`Zarejestrowano wejście: ${newVisitor.name}`, "log-info");
+            }
+        }
+
+        function updateVisitorListUI() {
+            const list = document.getElementById('active-visitors-list');
+            list.innerHTML = '';
+            
+            if (activeVisitors.length === 0) {
+                list.innerHTML = '<li style="color: #9ca3af; font-style: italic;">Brak zalogowanych osób.</li>';
+                return;
+            }
+
+            activeVisitors.forEach(v => {
+                const li = document.createElement('li');
+                li.innerText = v.name;
+                list.appendChild(li);
+            });
+        }
+
+        function renderVisitorsOnMap() {
+            const layer = document.getElementById('visitors-layer');
+            layer.innerHTML = ''; 
+
+            activeVisitors.forEach(v => {
+                const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                circle.setAttribute("cx", v.x);
+                circle.setAttribute("cy", v.y);
+                circle.setAttribute("r", 8);
+                circle.setAttribute("class", "visitor");
+                circle.setAttribute("filter", "url(#shadow)");
+
+                // Tooltip pokazujący imię po najechaniu myszką
+                const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+                title.textContent = v.name;
+                circle.appendChild(title);
+
+                // Wyświetlanie info po kliknięciu na osobę
+                circle.onclick = function(e) {
+                    e.stopPropagation(); // żeby nie kliknąć strefy pod spodem
+                    document.getElementById('room-title').innerText = `Osoba: ${v.name}`;
+                    document.getElementById('room-desc').innerText = `Zalogowany zwiedzający z aktywnym lokalizatorem.\nOstatnia znana pozycja: X: ${Math.round(v.x)}, Y: ${Math.round(v.y)}`;
+                    document.getElementById('room-title').style.color = '#3b82f6';
+                };
+
+                layer.appendChild(circle);
+            });
+        }
+
+        // Symulacja spacerowania wprowadzonych osób
+        setInterval(() => {
+            activeVisitors.forEach(v => {
+                // Lekkie przemieszczanie się
+                v.x += (Math.random() - 0.5) * 30;
+                v.y += (Math.random() - 0.5) * 30;
+                
+                // Utrzymanie w granicach budynku
+                if(v.x < 150) v.x = 150;
+                if(v.x > 1050) v.x = 1050;
+                if(v.y < 150) v.y = 150;
+                if(v.y > 650) v.y = 650;
+            });
+            renderVisitorsOnMap();
+        }, 3000);
+
+        function toggleDangerMode() {
+            dangerModeActive = !dangerModeActive;
+            const btn = document.getElementById('danger-btn');
+            if (dangerModeActive) {
+                btn.innerText = "Tryb oznaczania stref: WŁĄCZONY";
+                btn.classList.add('active');
+            } else {
+                btn.innerText = "Tryb oznaczania stref: WYŁĄCZONY";
+                btn.classList.remove('active');
+            }
+        }
+
+        function handleZoneClick(element, zoneName) {
+            if (dangerModeActive && !globalAlertActive) {
+                element.classList.toggle('danger');
+                if (element.classList.contains('danger')) {
+                    addLog(`API POST: Alert strefy -> ${zoneName}!`, "log-danger");
+                } else {
+                    addLog(`API POST: Odwołano alarm -> ${zoneName}.`, "log-safe");
+                }
+            }
+            
+            if (!globalAlertActive) {
+                if (element.classList.contains('danger')) {
+                    document.getElementById('room-title').innerText = `ZAKAZ WSTĘPU: ${zoneName}`;
+                    document.getElementById('room-desc').innerText = "Strefa wyłączona z użytku. Algorytmy poprowadzą zwiedzających inaczej.";
+                    document.getElementById('room-title').style.color = '#e11d48';
+                } else {
+                    document.getElementById('room-title').innerText = zoneName;
+                    document.getElementById('room-desc').innerText = roomDescriptions[zoneName];
+                    document.getElementById('room-title').style.color = '#111827';
+                }
+            }
+        }
+
+        function triggerGlobalAlert() {
+            globalAlertActive = !globalAlertActive;
+            const zones = document.querySelectorAll('.zone');
+            
+            if (globalAlertActive) {
+                zones.forEach(z => z.classList.add('global-danger'));
+                addLog(`CRITICAL: Globalny system ewakuacji aktywny!`, "log-danger");
+                document.getElementById('room-title').innerText = "GLOBALNA EWAKUACJA";
+                document.getElementById('room-desc').innerText = "Wydano polecenie opuszczenia budynku.";
+                document.getElementById('room-title').style.color = '#be123c';
+            } else {
+                zones.forEach(z => z.classList.remove('global-danger'));
+                addLog(`INFO: Globalny alarm odwołany.`, "log-safe");
+                document.getElementById('room-title').innerText = "Alarm odwołany";
+                document.getElementById('room-desc').innerText = "Budynek zabezpieczony.";
+                document.getElementById('room-title').style.color = '#059669';
+            }
+        }
+
+        function simulateHelpRequest() {
+            if (activeVisitors.length === 0) {
+                alert("Nie ma nikogo w budynku! Dodaj zwiedzającego, zanim wywołasz SOS.");
+                return;
+            }
+
+            const helpLayer = document.getElementById('help-layer');
+            
+            // System wybiera konkretną dodaną wcześniej osobę
+            const victim = activeVisitors[Math.floor(Math.random() * activeVisitors.length)];
+            const id = "sos-" + Date.now();
+
+            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circle.setAttribute("cx", victim.x); // SOS pojawia się w miejscu wybranej osoby
+            circle.setAttribute("cy", victim.y);
+            circle.setAttribute("id", id);
+            circle.setAttribute("class", "help-marker");
+            
+            circle.onclick = function(e) {
+                e.stopPropagation();
+                helpLayer.removeChild(this);
+                addLog(`API POST: Obsłużono zgłoszenie SOS (Udzielono pomocy: ${victim.name}).`, "log-safe");
+            };
+
+            helpLayer.appendChild(circle);
+            
+            document.getElementById('room-title').innerText = `SOS: ${victim.name}`;
+            document.getElementById('room-desc').innerText = `Potrzebna natychmiastowa pomoc! Znacznik pulsuje na mapie w miejscu przebywania gościa.`;
+            document.getElementById('room-title').style.color = '#fbbf24';
+
+            addLog(`Odebrano SOS od: ${victim.name}! Ochrona skierowana na współrzędne: [${Math.round(victim.x)}, ${Math.round(victim.y)}].`, "log-warning");
+        }
+    </script>
+</body>
+</html>
