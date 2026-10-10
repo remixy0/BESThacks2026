@@ -2,7 +2,6 @@ package restservice.navigation;
 
 import org.springframework.stereotype.Service;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class NavigationService {
@@ -49,7 +48,8 @@ public class NavigationService {
 
     public record Policy(String type, long revision, boolean alarmActive, List<ExclusionZone> zones, List<MapPoint> exits) {}
 
-    private final ConcurrentHashMap<String, State> states = new ConcurrentHashMap<>();
+    // All state access is guarded by this service's monitor.
+    private final Map<String, State> states = new HashMap<>();
 
     public NavigationService(NavigationMap map, Pathfinder pathfinder) {
         this.map = map;
@@ -59,40 +59,34 @@ public class NavigationService {
     public synchronized Guidance destination(String connection, MapPoint destination) {
         map.requireWalkable(destination, "DESTINATION");
         State state = states.computeIfAbsent(connection, ignored -> new State());
-        synchronized (state) {
-            state.requestedDestination = destination;
-            state.destination = destination;
-            state.turns = List.of();
-            state.index = 0;
-            state.arrived = false;
-            state.routeId = null;
-            return update(state);
-        }
+        state.requestedDestination = destination;
+        state.destination = destination;
+        state.turns = List.of();
+        state.index = 0;
+        state.arrived = false;
+        state.routeId = null;
+        return update(state);
     }
 
     /** Null means the client has not selected a destination. */
     public synchronized Guidance position(String connection, MapPoint position) {
         State state = states.computeIfAbsent(connection, ignored -> new State());
-        synchronized (state) {
-            state.position = position;
-            return state.requestedDestination == null && !alarmActive && zones.isEmpty() ? null : update(state);
-        }
+        state.position = position;
+        return state.requestedDestination == null && !alarmActive && zones.isEmpty() ? null : update(state);
     }
 
     public synchronized Guidance cancel(String connection) {
         State state = states.computeIfAbsent(connection, ignored -> new State());
-        synchronized (state) {
-            state.requestedDestination = null;
-            if (alarmActive) return update(state);
-            state.destination = null;
-            state.turns = List.of();
-            state.routeId = null;
-            state.index = 0;
-            state.arrived = false;
-            if (state.position != null && new RestrictedMap(map,List.copyOf(zones.values()),state.position).excluded(state.position))
-                return update(state);
-            return response(state, "cancelled", null, false, null);
-        }
+        state.requestedDestination = null;
+        if (alarmActive) return update(state);
+        state.destination = null;
+        state.turns = List.of();
+        state.routeId = null;
+        state.index = 0;
+        state.arrived = false;
+        if (state.position != null && new RestrictedMap(map,List.copyOf(zones.values()),state.position).excluded(state.position))
+            return update(state);
+        return response(state, "cancelled", null, false, null);
     }
 
     public synchronized void remove(String connection) { states.remove(connection); }

@@ -5,7 +5,6 @@ import org.springframework.web.socket.*;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
-import java.io.IOException;
 import restservice.navigation.MapPoint;
 import restservice.navigation.NavigationException;
 import restservice.navigation.NavigationService;
@@ -110,11 +109,11 @@ public class PositionWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    private void invalidPosition(WebSocketSession session) throws IOException {
+    private void invalidPosition(WebSocketSession session) {
         send(session, new PositionError("error", "INVALID_POSITION", "Wyślij skończone współrzędne x i y w metrach."));
     }
 
-    private void send(WebSocketSession session, Object message) throws IOException {
+    private void send(WebSocketSession session, Object message) {
         hub.sendUser(session.getId(), message);
     }
 

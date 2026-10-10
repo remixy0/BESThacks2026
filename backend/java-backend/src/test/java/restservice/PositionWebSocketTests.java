@@ -63,8 +63,8 @@ class PositionWebSocketTests {
                 assertThat(accepted.get("receivedAt").asText()).isNotBlank();
                 send(secondSocket, "{\"x\":8,\"y\":9}");
                 assertThat(json.readTree(secondListener.next()).get("type").asText()).isEqualTo("position");
-                assertThat(positions.latestForUser("first@example.com").orElseThrow().x()).isEqualTo(1.2);
-                assertThat(positions.latestForUser("second@example.com").orElseThrow().x()).isEqualTo(8);
+                assertThat(latestPosition("first@example.com").orElseThrow().x()).isEqualTo(1.2);
+                assertThat(latestPosition("second@example.com").orElseThrow().x()).isEqualTo(8);
 
                 for (String invalid : new String[]{"not json", "{}", "{\"x\":1}",
                         "{\"x\":null,\"y\":2}", "{\"x\":\"1\",\"y\":2}",
@@ -72,7 +72,7 @@ class PositionWebSocketTests {
                     send(firstSocket, invalid);
                     assertThat(json.readTree(firstListener.next()).get("code").asText())
                             .isEqualTo("INVALID_POSITION");
-                    assertThat(positions.latestForUser("first@example.com").orElseThrow().x()).isEqualTo(1.2);
+                    assertThat(latestPosition("first@example.com").orElseThrow().x()).isEqualTo(1.2);
                 }
                 send(firstSocket, "{\"x\":2.6,\"y\":4.8}");
                 assertThat(json.readTree(firstListener.next()).get("x").doubleValue()).isEqualTo(2.6);
@@ -84,10 +84,10 @@ class PositionWebSocketTests {
             }
             // The close callback on the server may run just after the client receives the close frame.
             long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
-            while (positions.latestForUser("first@example.com").isPresent() && System.nanoTime() < deadline) {
+            while (latestPosition("first@example.com").isPresent() && System.nanoTime() < deadline) {
                 Thread.sleep(10);
             }
-            assertThat(positions.latestForUser("first@example.com")).isEmpty();
+            assertThat(latestPosition("first@example.com")).isEmpty();
         }
     }
 
@@ -174,7 +174,7 @@ class PositionWebSocketTests {
                     assertThat(closedDuringLogout.getCause()).isInstanceOf(java.io.IOException.class);
                 }
                 assertThat(listener.closed.get(5, TimeUnit.SECONDS)).isEqualTo(1008);
-                assertThat(positions.latestForUser("first@example.com")).isEmpty();
+                assertThat(latestPosition("first@example.com")).isEmpty();
             } finally {
                 socket.abort();
             }
@@ -254,6 +254,10 @@ class PositionWebSocketTests {
 
     private WebSocket adminConnect(HttpClient client, Messages listener) throws Exception {
         return client.newWebSocketBuilder().buildAsync(URI.create("ws://localhost:"+port+"/ws/admin"),listener).get(5,TimeUnit.SECONDS);
+    }
+
+    private java.util.Optional<PositionStore.Position> latestPosition(String username) {
+        return positions.snapshot().stream().filter(position -> position.username().equals(username)).findFirst();
     }
 
     private HttpClient loggedInClient(String email) throws Exception {

@@ -67,8 +67,8 @@ Swagger nie wysyła wiadomości WebSocket bezpośrednio.
 ## Przechowywanie i dostęp
 
 - Ostatnia pozycja każdego aktywnego połączenia jest w pamięci backendu.
-  `PositionStore.latestForUser(email)` udostępnia ostatnią pozycję dla przyszłego
-  wyznaczania trasy. Wiele połączeń użytkownika jest obsługiwanych oddzielnie.
+  `PositionStore.snapshot()` udostępnia administratorom najnowszą pozycję każdego
+  użytkownika. Nawigacja obsługuje każde połączenie użytkownika oddzielnie.
 - Po zamknięciu połączenia jego pozycja jest usuwana. Restart backendu usuwa
   wszystkie pozycje. Nie zapisujemy historii lokalizacji w PostgreSQL.
 - Brak zalogowania powoduje HTTP `401` przy otwieraniu połączenia.
