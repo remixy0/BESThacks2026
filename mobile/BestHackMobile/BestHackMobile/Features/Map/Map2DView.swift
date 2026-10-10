@@ -1,8 +1,9 @@
+import simd
 import SwiftUI
 
 /// A simple top-down floor plan (north up) that keeps you in the middle: galleries, exhibits, the route, and you.
-/// Pinch to zoom, tap an exhibit to see it. (No dragging: the map follows you.) Always in the dark palette,
-/// like the 3D map, so it isn't glaring white.
+/// Drag to look around, pinch to zoom, tap an exhibit to see it; the location button brings you back to the middle.
+/// Always in the dark palette, like the 3D map, so it isn't glaring white.
 struct Map2DView: View {
     let guide: GuideModel
     var visited: Set<String> = []
@@ -12,23 +13,40 @@ struct Map2DView: View {
 
     @State private var scale: CGFloat = 4        // points per metre
     @State private var zoomStart: CGFloat?
+    /// How far you've dragged the plan away from yourself (metres). The plan keeps following you, offset by this.
+    @State private var offset = SIMD2<Float>.zero
+    @State private var dragStart: SIMD2<Float>?
 
     var body: some View {
         GeometryReader { geo in
             let visibleTop = min(covered.top, geo.size.height * 0.4)
             let visibleBottom = geo.size.height - min(covered.bottom, geo.size.height * 0.6)
             let anchor = CGPoint(x: geo.size.width / 2, y: (visibleTop + visibleBottom) / 2)
-            let projection = Projection(anchor: anchor, center: guide.position, scale: scale)
+            let projection = Projection(anchor: anchor, center: guide.position + offset, scale: scale)
             Canvas { context, _ in
                 draw(in: &context, projection: projection)
             }
             .contentShape(Rectangle())
-            .gesture(zoomGesture)
+            .gesture(SimultaneousGesture(panGesture, zoomGesture))
             .onTapGesture { location in
                 handleTap(at: location, projection: projection)
             }
         }
         .background(MapPalette.outside(dark: true))
+        .overlay(alignment: .bottomTrailing) {
+            if simd_length(offset) > 0.5 {
+                RecenterButton {
+                    withAnimation(.easeOut(duration: 0.25)) { offset = .zero }
+                }
+                .padding(.trailing, 14)
+                .padding(.bottom, covered.bottom + 12)
+                .transition(.scale.combined(with: .opacity))
+            }
+        }
+        .animation(.easeOut(duration: 0.2), value: simd_length(offset) > 0.5)
+        .onChange(of: guide.target?.key) { _, key in
+            if key != nil { offset = .zero }
+        }
         .environment(\.colorScheme, .dark)
         .accessibilityElement()
         .accessibilityLabel(tr("Floor plan", "Plan piętra"))
@@ -134,6 +152,20 @@ struct Map2DView: View {
     }
 
     // MARK: - Gestures
+
+    /// Drag the plan under your finger.
+    private var panGesture: some Gesture {
+        DragGesture(minimumDistance: 8)
+            .onChanged { value in
+                if dragStart == nil { dragStart = offset }
+                let moved = SIMD2(Float(value.translation.width / scale), Float(value.translation.height / scale))
+                let wanted = (dragStart ?? .zero) - moved
+                // Keep the middle of the screen over the building.
+                let focus = simd_clamp(guide.position + wanted, SIMD2(-110, -72), SIMD2(110, 72))
+                offset = focus - guide.position
+            }
+            .onEnded { _ in dragStart = nil }
+    }
 
     private var zoomGesture: some Gesture {
         MagnifyGesture()

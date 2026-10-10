@@ -20,18 +20,6 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section {
-                    Picker(tr("Language", "Język"), selection: $language.current) {
-                        ForEach(AppLanguage.allCases) { option in
-                            Text(option.title).tag(option)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .listRowBackground(Color.clear)
-                    .listRowInsets(EdgeInsets())
-                } header: {
-                    Text(tr("Language", "Język"))
-                }
                 modeSection
                 Section {
                     NavigationLink {
@@ -39,6 +27,7 @@ struct SettingsView: View {
                     } label: {
                         SettingsRow(title: tr("Voice", "Głos"), systemImage: "waveform", tint: Theme.coral, value: guide.voice.shortSummary)
                     }
+                    speedRow
                     Button(action: onRecalibrate) {
                         SettingsRow(title: tr("Calibrate again", "Skalibruj ponownie"), systemImage: "scope", tint: Theme.accent)
                     }
@@ -56,6 +45,7 @@ struct SettingsView: View {
                         SettingsRow(title: tr("Server, beacons and keys", "Serwer, beacony i klucze"), systemImage: "slider.horizontal.3", tint: Theme.inkSoft)
                     }
                 }
+                languageSection
                 accountSection
             }
             .scrollContentBackground(.hidden)
@@ -82,18 +72,69 @@ struct SettingsView: View {
 
     // MARK: - Sections
 
+    /// The two ways to explore, as two big cards side by side.
     private var modeSection: some View {
         Section {
-            Picker(tr("How you explore", "Jak zwiedzasz"), selection: $mode) {
-                ForEach(Array(UserMode.allCases.reversed())) { option in
-                    Text(option.shortTitle).tag(option)
+            HStack(alignment: .top, spacing: 10) {
+                ForEach([UserMode.standard, UserMode.blind]) { option in
+                    ModeCard(mode: option, isSelected: mode == option) {
+                        withAnimation(.easeOut(duration: 0.15)) { mode = option }
+                    }
                 }
             }
-            .pickerStyle(.segmented)
             .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets())
-        } footer: {
-            Text(mode.detail)
+        } header: {
+            Text(tr("How you explore", "Jak zwiedzasz"))
+        }
+    }
+
+    /// How fast the narrator speaks. Letting go plays a short sample at the new speed.
+    private var speedRow: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            SettingsRow(title: tr("Narrator speed", "Tempo lektora"), systemImage: "speedometer", tint: Theme.coral,
+                        value: VoiceSettings.speedName(guide.voice.speed))
+            HStack(spacing: 10) {
+                Image(systemName: "tortoise.fill")
+                    .foregroundStyle(Theme.inkSoft)
+                    .accessibilityHidden(true)
+                Slider(value: Bindable(guide.voice).speed, in: 0.7...1.2, step: 0.02,
+                       onEditingChanged: { editing in
+                           if !editing { guide.previewSpeed() }
+                       })
+                    .tint(Theme.coral)
+                    .accessibilityLabel(tr("Narrator speed", "Tempo lektora"))
+                    .accessibilityValue(VoiceSettings.speedName(guide.voice.speed))
+                Image(systemName: "hare.fill")
+                    .foregroundStyle(Theme.inkSoft)
+                    .accessibilityHidden(true)
+            }
+        }
+        .padding(.vertical, 2)
+    }
+
+    /// The app's language, with its flag.
+    private var languageSection: some View {
+        Section {
+            Picker(selection: $language.current) {
+                ForEach(AppLanguage.allCases) { option in
+                    Text("\(option.flag)  \(option.title)").tag(option)
+                }
+            } label: {
+                SettingsRow(title: tr("Language", "Język"), systemImage: "globe", tint: Theme.accent)
+            }
+            .pickerStyle(.menu)
+        }
+    }
+
+    /// The backend connection, in a few words.
+    private var serverStatus: (text: String, tint: Color) {
+        switch guide.server.state {
+        case .online: (text: tr("Connected", "Połączono"), tint: Theme.mint)
+        case .connecting: (text: tr("Connecting…", "Łączę…"), tint: Theme.amber)
+        case .noServer: (text: tr("None, local data", "Brak, dane lokalne"), tint: Theme.inkSoft)
+        case .offline: (text: tr("Local data (server unavailable)", "Dane lokalne (serwer niedostępny)"), tint: Theme.amber)
+        case .off: (text: tr("Paused", "Wstrzymane"), tint: Theme.inkSoft)
         }
     }
 
@@ -188,6 +229,12 @@ struct SettingsView: View {
             if let current = account.account {
                 LabeledContent(tr("Signed in as", "Zalogowano jako"), value: current.isDemo ? "\(current.email) (demo)" : current.email)
             }
+            LabeledContent {
+                Text(serverStatus.text)
+                    .multilineTextAlignment(.trailing)
+            } label: {
+                SettingsRow(title: tr("Server", "Serwer"), systemImage: "server.rack", tint: serverStatus.tint)
+            }
             Button(action: onShowIntro) {
                 SettingsRow(title: tr("Back to the welcome screen", "Wróć do ekranu powitalnego"), systemImage: "house", tint: Theme.accent)
             }
@@ -231,16 +278,6 @@ struct VoicePickerView: View {
                 .listRowInsets(EdgeInsets())
             } footer: {
                 Text(voiceStatus)
-            }
-
-            Section {
-                VStack(alignment: .leading, spacing: 6) {
-                    LabeledContent(tr("Speaking speed", "Tempo mowy"), value: speedName(voice.speed))
-                    Slider(value: Bindable(voice).speed, in: 0.7...1.2, step: 0.02)
-                        .tint(Theme.accent)
-                }
-            } footer: {
-                Text(tr("Slower is easier to follow while walking.", "Wolniej łatwiej zrozumieć w trakcie chodzenia."))
             }
 
             if voice.engine == .elevenLabs, voice.hasAPIKey {
@@ -382,13 +419,6 @@ struct VoicePickerView: View {
         savedStories = guide.savedStoryCount()
     }
 
-    private func speedName(_ speed: Float) -> String {
-        let percent = Int((speed * 100).rounded())
-        if speed < 0.95 { return tr("Slower (\(percent)%)", "Wolniej (\(percent)%)") }
-        if speed > 1.05 { return tr("Faster (\(percent)%)", "Szybciej (\(percent)%)") }
-        return tr("Normal", "Normalnie")
-    }
-
     private var voiceStatus: String {
         let voice = guide.voice
         if voice.engine == .apple { return tr("The built-in Apple voice works offline.", "Wbudowany głos Apple działa bez internetu.") }
@@ -469,25 +499,41 @@ struct AdvancedSettingsView: View {
 
     private var serverSection: some View {
         Section {
-            TextField(Secrets.backendURL.isEmpty ? "http://192.168.1.20:8000" : Secrets.backendURL, text: $serverDraft)
+            TextField(Secrets.backendHost.isEmpty ? "192.168.1.20" : Secrets.backendHost, text: $serverDraft)
                 .autocorrectionDisabled()
                 #if os(iOS)
                 .textInputAutocapitalization(.never)
                 .keyboardType(.URL)
                 #endif
                 .onSubmit(saveServer)
-            Button(tr("Save and reload beacons", "Zapisz i wczytaj beacony"), action: saveServer)
+            Button(tr("Save and connect", "Zapisz i połącz"), action: saveServer)
+            LabeledContent(tr("Connection", "Połączenie")) {
+                Text(connectionText)
+                    .multilineTextAlignment(.trailing)
+            }
         } header: {
             Text(tr("Server", "Serwer"))
         } footer: {
-            Text(tr("Your team's backend for logging in and the beacon positions. Empty = BACKEND_URL from Secrets.plist. Now: ",
-                    "Backend zespołu: logowanie i pozycje beaconów. Puste = BACKEND_URL z Secrets.plist. Teraz: ")
+            Text(tr("The museum backend (login, guidance, alarm). Its IP is enough; port 8081 is assumed. Empty = BACKEND_HOST from Secrets.plist. Now: ",
+                    "Backend muzeum (logowanie, prowadzenie, alarm). Wystarczy IP, domyślnie port 8081. Puste = BACKEND_HOST z Secrets.plist. Teraz: ")
                  + (account.serverURL?.absoluteString ?? tr("not set", "nie ustawiono")) + ".")
+        }
+    }
+
+    private var connectionText: String {
+        let server = guide.server
+        switch server.state {
+        case .online: return tr("Connected", "Połączono")
+        case .connecting: return tr("Connecting…", "Łączę…")
+        case .noServer: return tr("No server: local data", "Brak serwera: dane lokalne")
+        case .off: return tr("Paused", "Wstrzymane")
+        case .offline: return tr("Local data. ", "Dane lokalne. ") + (server.problem ?? "")
         }
     }
 
     private func saveServer() {
         account.serverOverride = serverDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guide.server.reconnect()
         Task { await guide.positioning.loadDirectory(using: account.backend) }
     }
 
@@ -566,15 +612,15 @@ struct AdvancedSettingsView: View {
 
     private var routeSection: some View {
         Section {
-            LabeledContent(tr("Route service", "Serwis tras"), value: Secrets.routeAPIURL?.host() ?? tr("Not set", "Nie ustawiono"))
+            LabeledContent(tr("Guidance now", "Prowadzenie teraz"),
+                           value: guide.routeSource == .server ? tr("From the server", "Z serwera") : tr("From the map on the phone", "Z mapy w telefonie"))
+            LabeledContent(tr("Map on the phone", "Mapa w telefonie"),
+                           value: MuseumGrid.shared != nil ? tr("Ready", "Gotowa") : tr("Missing", "Brak pliku"))
         } header: {
             Text(tr("Routes", "Trasy"))
         } footer: {
-            Text(Secrets.routeAPIURL == nil
-                 ? tr("Without a route service the bloops lead in a straight line. Set ROUTE_API_URL in Secrets.plist to use walking routes.",
-                      "Bez serwisu tras dźwięki prowadzą w linii prostej. Ustaw ROUTE_API_URL w Secrets.plist, żeby używać tras.")
-                 : tr("Walking routes come from your route service. Until one arrives, the bloops lead in a straight line.",
-                      "Trasy przychodzą z Twojego serwisu. Zanim przyjdą, dźwięki prowadzą w linii prostej."))
+            Text(tr("Routes come from the server step by step (it knows about closed areas and the alarm). If it's down or answers with errors, the phone plans the route itself on its copy of the same map, avoiding the closed areas it last heard about.",
+                    "Trasy przychodzą z serwera krok po kroku (zna zamknięte strefy i alarm). Gdy serwer nie działa albo zwraca błędy, telefon sam wyznacza trasę na swojej kopii tej samej mapy, omijając ostatnio znane zamknięte strefy."))
         }
     }
 
@@ -638,6 +684,48 @@ struct BeaconsView: View {
 }
 
 /// An icon in a coloured rounded square, a title and an optional value (like Settings on iPhone).
+/// One way to explore (with the map / just listening) as a big card: picture-like icon, name, one line about it.
+private struct ModeCard: View {
+    let mode: UserMode
+    let isSelected: Bool
+    var action: () -> Void
+
+    private var tint: Color { mode == .blind ? Theme.coral : Theme.accent }
+
+    var body: some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .top) {
+                    Image(systemName: mode.systemImage)
+                        .font(.system(size: 26, weight: .semibold))
+                        .foregroundStyle(isSelected ? Color.white : tint)
+                        .frame(width: 54, height: 54)
+                        .background(RoundedRectangle(cornerRadius: 15, style: .continuous).fill(isSelected ? tint : tint.opacity(0.14)))
+                    Spacer(minLength: 0)
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                        .font(.title2)
+                        .foregroundStyle(isSelected ? tint : Theme.line)
+                }
+                Text(mode.title)
+                    .font(Theme.bodyBold)
+                    .foregroundStyle(Theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(mode.cardDetail)
+                    .font(Theme.small)
+                    .foregroundStyle(Theme.inkSoft)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: .infinity, minHeight: 160, alignment: .topLeading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(CardButtonStyle(padding: 14, fill: isSelected ? tint.opacity(0.08) : Theme.card,
+                                     highlight: isSelected ? tint : nil))
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+    }
+}
+
 struct SettingsRow: View {
     var title: String
     var systemImage: String

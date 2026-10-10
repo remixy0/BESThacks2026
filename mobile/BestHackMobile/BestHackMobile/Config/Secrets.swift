@@ -9,12 +9,17 @@ nonisolated enum Secrets {
     /// Built-in ElevenLabs key. Used when nobody has pasted their own key in the app.
     static let elevenLabsAPIKey = value(for: "ELEVENLABS_API_KEY")
 
-    /// Your backend (login + beacon positions), e.g. "http://192.168.1.20:8000".
-    /// Can also be set in the app: Settings → Advanced → Server (that wins).
-    static let backendURL = value(for: "BACKEND_URL")
+    /// The museum backend (login, navigation over WebSocket, alarm). Just the server's IP is enough,
+    /// e.g. "192.168.1.20" (http and port 8081 are assumed), or a full address like "http://192.168.1.20:8081".
+    /// Empty = no server: everything runs on the app's own data. Can also be set in the app
+    /// (Settings → Server, beacons and keys), which wins. The older key BACKEND_URL still works.
+    static let backendHost: String = {
+        let host = value(for: "BACKEND_HOST")
+        return host.isEmpty ? value(for: "BACKEND_URL") : host
+    }()
 
-    /// Your route service. When set, the app asks it for a walking route to each exhibit
-    /// (see Services/Routing/RouteProvider.swift). When empty, guidance goes in a straight line.
+    /// Not used any more (routes come from the backend's WebSocket, or the bundled map when it's down).
+    /// Kept so old Secrets.plist files still read fine.
     static let routeAPIURL: URL? = {
         let text = value(for: "ROUTE_API_URL")
         return text.isEmpty ? nil : URL(string: text)

@@ -16,7 +16,12 @@ final class AppModel {
     /// Calibrated (or skipped) since the app started.
     var calibrationDone = false
 
-    private init() {}
+    private init() {
+        // The guide's server connection logs in through the account (again, when the server's session runs out).
+        let store = self.account
+        guide.server.session = { await store.socketSession() }
+        guide.server.onSessionRejected = { store.sessionExpired() }
+    }
 
     /// Loads the beacon positions for the signed-in account.
     func refreshBeacons() async {

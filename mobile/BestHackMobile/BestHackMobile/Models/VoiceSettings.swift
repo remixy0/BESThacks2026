@@ -48,6 +48,14 @@ final class VoiceSettings {
 
     /// The voice used until you pick one yourself (matched by name in your ElevenLabs voices, ignoring accents).
     static let preferredVoiceName = "Makłowicz"
+
+    /// "Slower (88%)" / "Normal" / "Faster (110%)" for the speed slider.
+    static func speedName(_ speed: Float) -> String {
+        let percent = Int((speed * 100).rounded())
+        if speed < 0.95 { return tr("Slower (\(percent)%)", "Wolniej (\(percent)%)") }
+        if speed > 1.05 { return tr("Faster (\(percent)%)", "Szybciej (\(percent)%)") }
+        return tr("Normal", "Normalnie")
+    }
     /// True once the preferred voice was looked for and not found among your voices.
     private(set) var preferredVoiceMissing = false
 

@@ -31,6 +31,14 @@ enum UserMode: String, CaseIterable, Identifiable {
         }
     }
 
+    /// One short line for the big mode card in Settings.
+    var cardDetail: String {
+        switch self {
+        case .blind: tr("No map: big buttons, everything read aloud.", "Bez mapy: duże przyciski, wszystko czytane na głos.")
+        case .standard: tr("A 3D map, and the sound shows the way.", "Mapa 3D, a dźwięk wskazuje drogę.")
+        }
+    }
+
     var systemImage: String {
         switch self {
         case .blind: "ear.fill"

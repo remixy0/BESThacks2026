@@ -121,7 +121,7 @@ struct MapScreen: View {
 
     /// Something worth telling you (missing data, route service problem, voice fell back…).
     private var notice: String? {
-        guide.loadError ?? guide.statusMessage ?? guide.audio.speechNotice ?? guide.voiceInput.problem
+        guide.loadError ?? guide.statusMessage ?? guide.audio.speechNotice ?? guide.voiceInput.problem ?? account.notice
     }
 }
 
@@ -143,8 +143,10 @@ private struct GuideEvents: View {
             // Facing the right way: a firm, unmistakable tap.
             .sensoryFeedback(.impact(weight: .heavy, intensity: 1), trigger: guide.onTrackEvent)
             .sensoryFeedback(.warning, trigger: guide.offRouteEvent)
+            // The museum alarm went on or off.
+            .sensoryFeedback(.error, trigger: guide.alarmEvent)
             .onChange(of: guide.arrivalEvent) { _, _ in
-                if let arrived = guide.arrived { visits.mark(arrived.key) }
+                if let arrived = guide.arrived, !GuideModel.isExit(arrived) { visits.mark(arrived.key) }
             }
             .onChange(of: guide.speechFinishedEvent) { _, _ in
                 // Only while the map is in front (not under Settings or the exhibit list).

@@ -128,6 +128,13 @@ nonisolated struct ElevenLabsTTS: Sendable {
         }
     }
 
+    /// The speed as ElevenLabs wants it: 0.7…1.2, rounded to hundredths. (A Float 1.2 becomes 1.2000000476837158 as a
+    /// Double, which ElevenLabs rejects with HTTP 400; 0.7 becomes 0.6999999880790710.)
+    static func apiSpeed(_ speed: Float) -> Double {
+        let rounded = (Double(speed) * 100).rounded() / 100
+        return min(max(rounded, 0.7), 1.2)
+    }
+
     private static func isCancellation(_ error: any Error) -> Bool {
         error is CancellationError || (error as? URLError)?.code == .cancelled
     }
@@ -145,7 +152,7 @@ nonisolated struct ElevenLabsTTS: Sendable {
             "text": text,
             "model_id": model.rawValue,
             "voice_settings": ["stability": 0.45, "similarity_boost": 0.8, "style": 0.15, "use_speaker_boost": true,
-                               "speed": Double(min(max(speed, 0.7), 1.2))],
+                               "speed": Self.apiSpeed(speed)],
         ])
         request.timeoutInterval = 20
 

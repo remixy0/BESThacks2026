@@ -21,6 +21,9 @@ final class GuideModel {
     let voiceInput = VoiceControl()
     /// Say your phrase ("Hej przewodniku") to start a voice command without touching the phone.
     let wakeWord = WakeWordListener()
+    /// The museum backend's live connection (`/ws/position`): your position goes up, step-by-step guidance,
+    /// the alarm and closed areas come down. When it's down, guidance runs on the bundled map (`MuseumGrid`).
+    let server = PositionSocket()
     let info: MuseumInfo?
     let loadError: String?
 
@@ -103,6 +106,20 @@ final class GuideModel {
     /// Length of the route when guidance started (for the progress bar).
     private(set) var routeLength: Float = 0
 
+    /// Where the guidance comes from right now.
+    enum RouteSource: Equatable {
+        /// The server's step-by-step directions (`nextWaypoint`), which know about closed areas and the alarm.
+        case server
+        /// The phone's own copy of the map (`MuseumGrid`): the failsafe when the server is down or misbehaving.
+        case local
+    }
+
+    private(set) var routeSource: RouteSource = .local
+    /// The server says there's no way through right now (an area closed by the staff): no arrow, no bloops.
+    private(set) var routeBlocked = false
+    /// The museum's alarm is on: guidance to the nearest exit takes over everything else.
+    private(set) var alarmActive = false
+
     enum Turn: Equatable {
         case ahead, left, right, around, unknown
     }
@@ -124,6 +141,8 @@ final class GuideModel {
     private(set) var offRouteEvent = 0
     /// Everything queued has been said (not when it was interrupted).
     private(set) var speechFinishedEvent = 0
+    /// The alarm went on or off.
+    private(set) var alarmEvent = 0
     /// Set when the guide wants to hear you once it has finished talking (after arriving).
     var listenAfterSpeech = false
 
@@ -199,7 +218,19 @@ final class GuideModel {
     @ObservationIgnored private var demoYaw: Float = 0
     @ObservationIgnored private var smoothPosition: SIMD2<Float>
     @ObservationIgnored private var lastLanguage = LanguageSettings.shared.current
-    private let routeProvider: any RouteProvider = RouteProviders.configured()
+    /// Where the current guidance ends (the exhibit's approach point, or the exit).
+    @ObservationIgnored private var destinationPoint: SIMD2<Float>?
+    /// Server guidance: the length of the route after the next waypoint (the server's remaining minus the next leg).
+    @ObservationIgnored private var serverTail: Float = 0
+    @ObservationIgnored private var lastServerNavigation: ContinuousClock.Instant?
+    @ObservationIgnored private var lastIdleResend: ContinuousClock.Instant?
+    /// The server said it can't route to the current destination (error message): don't keep asking.
+    @ObservationIgnored private var serverRefusedDestination = false
+    @ObservationIgnored private var localRouteTask: Task<Void, Never>?
+    /// What you were heading to when the alarm started (resumed when it's called off).
+    @ObservationIgnored private var targetBeforeAlarm: MuseumInfo.Exhibit?
+    /// Key of the stand-in "exhibit" used for the emergency exit.
+    static let exitKey = "__exit"
 
     /// How long you face an exhibit before it's chosen.
     private static let dwell: Duration = .milliseconds(1500)
@@ -228,6 +259,13 @@ final class GuideModel {
         audio.onSpeechFinished = { [weak self] in self?.speakNext() }
         // Any app button stops the guide talking before it does its own thing.
         UserTap.onTap = { [weak self] in self?.userTapped() }
+        // The backend.
+        server.onNavigation = { [weak self] in self?.handleServer($0) }
+        server.onPolicy = { [weak self] in self?.handlePolicy($0) }
+        server.onError = { [weak self] in self?.handleServerError($0) }
+        server.onStateChange = { [weak self] in self?.serverStateChanged($0) }
+        // Read the walking map early (≈0.8 MB), so the first local route doesn't wait for it.
+        Task.detached(priority: .utility) { _ = MuseumGrid.shared }
         // Turn the 3D sound with your head as fast as the AirPods report (not just on the guide's 20 Hz tick).
         head.onMotion = { [weak self] yaw, pitch in
             guard let self, let offset = self.headingOffset, self.head.session == self.calibratedHeadSession else { return }
@@ -256,6 +294,8 @@ final class GuideModel {
             Task { await voice.loadVoices() }
         }
         wakeWord.start()
+        server.update(position: position)
+        server.start()
     }
 
     /// Stops everything that makes sound or uses sensors (app in the background).
@@ -270,6 +310,7 @@ final class GuideModel {
         listenAfterSpeech = false
         voiceInput.cancel()
         wakeWord.stop()
+        server.stop()
         audio.pause()
     }
 
@@ -367,9 +408,25 @@ final class GuideModel {
         say([Utterance(text: text, toward: nil)])
     }
 
-    /// Starts guidance to an exhibit.
-    func navigate(to exhibit: MuseumInfo.Exhibit, byLooking: Bool = false) {
+    /// Starts guidance to an exhibit. `announce: false` starts quietly (the caller says something itself).
+    func navigate(to exhibit: MuseumInfo.Exhibit, byLooking: Bool = false, announce: Bool = true) {
         guard let info else { return }
+        // During an alarm the way out comes first.
+        if alarmActive {
+            say([Utterance(text: tr("The alarm is on, so I'm taking you to the exit first.",
+                                    "Trwa alarm, więc najpierw prowadzę do wyjścia."), toward: nil, scope: .guidance)])
+            return
+        }
+        // The backend's map has no way in (a closed or staff-only room).
+        if let grid = MuseumGrid.shared, grid.unreachable.contains(exhibit.key) {
+            preview = nil
+            statusMessage = tr("\(exhibit.name) is in a closed part of the museum right now.",
+                               "\(exhibit.name) jest teraz w zamkniętej części muzeum.")
+            say([Utterance(text: tr("\(exhibit.name) is in a closed part of the museum right now, so I can't take you there.",
+                                    "\(exhibit.name) jest teraz w zamkniętej części muzeum, więc nie mogę tam poprowadzić."),
+                           toward: exhibit.floorPoint, scope: .guidance)])
+            return
+        }
         preview = nil
         faced = nil
         dwellProgress = 0
@@ -393,16 +450,31 @@ final class GuideModel {
         arrived = nil
         arrivingSince = nil
         onTrack = false
-        let destination = info.viewingSpot(for: exhibit, from: position)
+        // Where to stand: the backend map's approach point (the same one the server routes to), else our own guess.
+        let destination = MuseumGrid.shared?.approaches[exhibit.key] ?? info.viewingSpot(for: exhibit, from: position)
+        startRoute(to: destination, tellServer: true)
+
+        guard announce else { return }
+        let intro = byLooking ? tr("You chose \(exhibit.name).", "Wybrano: \(exhibit.name).")
+                              : tr("Guiding you to \(exhibit.name).", "Prowadzę do: \(exhibit.name).")
+        say([Utterance(text: intro + tr(" Follow the bloops.", " Idź za dźwiękiem."), toward: exhibit.floorPoint, scope: .guidance)])
+    }
+
+    /// Guidance toward `destination`: a straight line at once, the phone's own walking route a moment later, and
+    /// the server's step-by-step guidance whenever it answers (it then takes over).
+    private func startRoute(to destination: SIMD2<Float>, tellServer: Bool) {
+        destinationPoint = destination
+        routeBlocked = false
+        routeSource = .local
+        lastServerNavigation = nil
+        serverRefusedDestination = false
+        serverTail = 0
         setRoute([position, destination], fromService: false)
         routeLength = simd_distance(position, destination)
         turn = .unknown
         nextBloop = .now + .seconds(1)
-
-        let intro = byLooking ? tr("You chose \(exhibit.name).", "Wybrano: \(exhibit.name).")
-                              : tr("Guiding you to \(exhibit.name).", "Prowadzę do: \(exhibit.name).")
-        say([Utterance(text: intro + tr(" Follow the bloops.", " Idź za dźwiękiem."), toward: exhibit.floorPoint, scope: .guidance)])
-        requestRoute(to: exhibit, destination: destination)
+        planLocalRoute()
+        if tellServer { server.setDestination(destination) }
     }
 
     /// Follow a route that arrived from somewhere else (e.g. pushed by your server).
@@ -413,6 +485,8 @@ final class GuideModel {
         arrived = nil
         var path = points
         if let first = path.first, simd_distance(first, position) > 2 { path.insert(position, at: 0) }
+        destinationPoint = path.last
+        routeSource = .local
         setRoute(path, fromService: true)
         routeLength = Self.length(of: path)
         nextBloop = .now
@@ -426,6 +500,11 @@ final class GuideModel {
 
     func stopGuidance() {
         guard target != nil else { return }
+        if alarmActive {
+            say([Utterance(text: tr("The alarm is on. Please keep going to the exit.", "Trwa alarm. Idź dalej do wyjścia."),
+                           toward: nil, scope: .guidance)])
+            return
+        }
         endGuidance()
         lookCooldownUntil = .now + .seconds(6)
         say([Utterance(text: tr("Guidance stopped.", "Prowadzenie zatrzymane."), toward: nil, scope: .guidance)])
@@ -738,6 +817,12 @@ final class GuideModel {
             autoAnnounceIfNeeded(now)
             updateFacedExhibit(now)
         }
+        server.update(position: position)
+        // The server went quiet in the middle of guidance: carry on from the phone's map.
+        if target != nil, routeSource == .server, !routeBlocked, let last = lastServerNavigation, now - last > .seconds(8) {
+            fallBackToLocal(notice: tr("The server stopped answering. Guiding from the map on your phone.",
+                                       "Serwer przestał odpowiadać. Prowadzę według mapy w telefonie."))
+        }
         if target != nil { updateGuidance(now) }
     }
 
@@ -857,12 +942,14 @@ final class GuideModel {
             routeSegment = progress.segment
             if route.count > 2 { waypointEvent += 1 }
         }
-        let left = RouteMath.remainingLength(of: route, from: progress) + progress.offset
+        var left = RouteMath.remainingLength(of: route, from: progress) + progress.offset
+        if routeSource == .server { left += serverTail }
         if remaining == nil || abs((remaining ?? 0) - left) > 0.5 { remaining = left }
+        let end = destinationPoint ?? route[route.count - 1]
 
         // Arrived? Close for a moment (beacon positions wobble), or the exhibit's beacon reads very close.
         let close = positioning.closeBeaconPoints(within: 1.5)
-        if simd_distance(position, route[route.count - 1]) < 2 || isAt(target, from: position) || beaconSaysAt(target, close: close) {
+        if simd_distance(position, end) < 2 || isAt(target, from: position) || beaconSaysAt(target, close: close) {
             if arrivingSince == nil { arrivingSince = now }
             if let since = arrivingSince, now - since > .milliseconds(700) {
                 arrive(at: target)
@@ -872,12 +959,12 @@ final class GuideModel {
             arrivingSince = nil
         }
 
-        // Wandered off the route: start again from here.
-        if progress.offset > 8, lastReroute.map({ now - $0 > .seconds(8) }) ?? true {
+        // Wandered off the route: start again from here. (The server re-plans by itself.)
+        if routeSource == .local, progress.offset > 8, lastReroute.map({ now - $0 > .seconds(8) }) ?? true {
             lastReroute = now
             offRouteEvent += 1
-            setRoute([position, route[route.count - 1]], fromService: false)
-            requestRoute(to: target, destination: route[route.count - 1])
+            setRoute([position, end], fromService: false)
+            planLocalRoute()
             return
         }
 
@@ -924,6 +1011,11 @@ final class GuideModel {
         nextBloop = now + .milliseconds(Int(beat.interval * 1000))
     }
 
+    /// A short sentence at the narrator's current speed (Settings, after moving the speed slider).
+    func previewSpeed() {
+        say([Utterance(text: tr("This is how fast I'll speak.", "Tak szybko będę mówić."), toward: nil)])
+    }
+
     /// One bloop of the chosen style in front of you (Settings, when you pick a style).
     func previewBloopStyle() {
         audio.resume()
@@ -939,6 +1031,11 @@ final class GuideModel {
         lastAnnounceTime = .now
         lastAnnounced = Set(nearby.prefix(3).map(\.key))
         audio.playChime(at: exhibit.floorPoint)
+        if Self.isExit(exhibit) {
+            say([Utterance(text: tr("You've reached the exit. Please leave the building calmly.",
+                                    "Jesteś przy wyjściu. Spokojnie opuść budynek."), toward: exhibit.floorPoint, scope: .guidance)])
+            return
+        }
         var text = tr("You have arrived at \(exhibit.name).", "Jesteś na miejscu: \(exhibit.name).")
         var story: [Utterance] = []
         if mode == .blind {
@@ -950,15 +1047,22 @@ final class GuideModel {
         say([Utterance(text: text, toward: exhibit.floorPoint, scope: .guidance)] + story)
     }
 
-    private func endGuidance() {
+    private func endGuidance(tellServer: Bool = true) {
         target = nil
         remaining = nil
         nextBloop = nil
         arrivingSince = nil
         turn = .unknown
         onTrack = false
+        destinationPoint = nil
+        routeBlocked = false
+        routeSource = .local
+        lastServerNavigation = nil
+        localRouteTask?.cancel()
+        localRouteTask = nil
         if !route.isEmpty { setRoute([], fromService: false) }
         if demoWalk { positioning.endDemo() }
+        if tellServer { server.setDestination(nil) }
     }
 
     private func setRoute(_ points: [SIMD2<Float>], fromService: Bool) {
@@ -968,26 +1072,203 @@ final class GuideModel {
         routeVersion += 1
     }
 
-    /// Asks the route service (if configured) for a real walking route and swaps it in.
-    private func requestRoute(to exhibit: MuseumInfo.Exhibit, destination: SIMD2<Float>) {
-        guard routeProvider.isRemote else { return }
-        let provider = routeProvider
+    // MARK: - Local routes (the failsafe)
+
+    /// Plans a walking route on the phone's copy of the backend map, avoiding the areas the server last said were
+    /// closed, and uses it while the server isn't guiding.
+    private func planLocalRoute() {
+        guard let destination = destinationPoint else { return }
+        localRouteTask?.cancel()
         let start = position
-        let routeTarget = RouteTarget(key: exhibit.key, title: exhibit.title, point: destination)
-        lastReroute = .now
-        Task { [weak self] in
-            do {
-                let points = try await provider.route(from: start, to: routeTarget)
-                guard let self, self.target?.key == exhibit.key, !points.isEmpty else { return }
-                var path = points
-                if let first = path.first, simd_distance(first, self.position) > 2 { path.insert(self.position, at: 0) }
-                self.setRoute(path, fromService: true)
-                self.routeLength = max(self.routeLength, Self.length(of: path))
-            } catch {
-                self?.statusMessage = tr("Route service: \(error.localizedDescription) Using a straight line.",
-                                         "Serwis tras: \(error.localizedDescription) Prowadzę w linii prostej.")
+        let zones = server.policy?.zones.map(\.rect) ?? []
+        let goal = target?.key
+        localRouteTask = Task { [weak self] in
+            let path = await Self.localRoute(from: start, to: destination, avoiding: zones)
+            guard let self, !Task.isCancelled, self.target?.key == goal, self.destinationPoint == destination,
+                  self.routeSource == .local else { return }
+            guard var path else {
+                if MuseumGrid.shared != nil {
+                    self.statusMessage = tr("No way through on the map; heading straight for it.",
+                                            "Na mapie nie ma przejścia, prowadzę w linii prostej.")
+                }
+                return
             }
+            path[0] = self.position
+            self.setRoute(path, fromService: false)
+            self.routeLength = max(self.routeLength, Self.length(of: path))
         }
+    }
+
+    @concurrent
+    private static func localRoute(from start: SIMD2<Float>, to end: SIMD2<Float>,
+                                   avoiding zones: [MuseumGrid.Rect]) async -> [SIMD2<Float>]? {
+        MuseumGrid.shared?.route(from: start, to: end, avoiding: zones)
+    }
+
+    /// The server can't guide right now: carry on with the phone's own route to the same place.
+    private func fallBackToLocal(notice: String?) {
+        guard target != nil, routeSource == .server || routeBlocked else { return }
+        print("[Guide] guidance falls back to the local map")
+        routeSource = .local
+        routeBlocked = false
+        lastServerNavigation = nil
+        serverTail = 0
+        if let destinationPoint { setRoute([position, destinationPoint], fromService: false) }
+        planLocalRoute()
+        if let notice { statusMessage = notice }
+    }
+
+    // MARK: - The server's guidance
+
+    private func handleServer(_ navigation: PositionSocket.Navigation) {
+        let now = ContinuousClock.now
+        let alarm = navigation.alarmActive == true
+        if alarm, !alarmActive { startAlarm() }
+
+        // Guidance about something else (an older destination): not ours.
+        if !alarm, let theirs = navigation.destination?.point, let ours = destinationPoint, simd_distance(theirs, ours) > 1 {
+            return
+        }
+        guard target != nil || alarm else { return }
+
+        switch navigation.status {
+        case "navigating", "escaping":
+            guard let waypoint = navigation.nextWaypoint?.point else { return }
+            if alarm, let exit = navigation.destination?.point { headForExit(exit) }
+            lastServerNavigation = now
+            routeBlocked = false
+            if routeSource != .server {
+                print("[Guide] the server guides now")
+                routeSource = .server
+                localRouteTask?.cancel()
+            }
+            serverTail = max(0, (navigation.remainingDistanceM ?? 0) - (navigation.distanceToWaypointM ?? 0))
+            if route.count != 2 || route.last != waypoint {
+                // A new turn point from the server (not the first one): a small tap.
+                if route.count == 2, routeFromService { waypointEvent += 1 }
+                setRoute([position, waypoint], fromService: true)
+            }
+            if let total = navigation.remainingDistanceM { routeLength = max(routeLength, total) }
+        case "arrived":
+            lastServerNavigation = now
+            if let target { arrive(at: target) }
+        case "blocked":
+            lastServerNavigation = now
+            let reason = navigation.reason ?? ""
+            if reason == "POSITION_OUTSIDE_MAP" || reason == "POSITION_BLOCKED" {
+                // The server thinks you're inside a wall: our position estimate is off, the phone's map copes better.
+                fallBackToLocal(notice: nil)
+                return
+            }
+            routeSource = .server
+            if !routeBlocked {
+                routeBlocked = true
+                turn = .unknown
+                statusMessage = Self.blockedText(reason)
+                say([Utterance(text: Self.blockedText(reason), toward: nil, scope: .guidance)])
+            }
+            if !route.isEmpty { setRoute([], fromService: true) }
+        case "cancelled", "idle":
+            // The server forgot our destination (restarted, reconnected): ask again, now and then.
+            guard target != nil, !alarm, !serverRefusedDestination,
+                  lastIdleResend.map({ now - $0 > .seconds(5) }) ?? true else { return }
+            lastIdleResend = now
+            server.resendDestination()
+        default:
+            break // awaiting_position: the socket sends the position by itself
+        }
+    }
+
+    private static func blockedText(_ reason: String) -> String {
+        switch reason {
+        case "NO_REACHABLE_EXIT": tr("No exit can be reached right now. Stay where you are and wait for help.",
+                                     "Teraz nie da się dojść do żadnego wyjścia. Zostań na miejscu i poczekaj na pomoc.")
+        case "NO_ESCAPE_ROUTE": tr("There's no way out of this closed area right now. Wait for staff.",
+                                   "Teraz nie da się wyjść z tej zamkniętej strefy. Poczekaj na obsługę.")
+        default: tr("The way there is closed right now. Wait a moment or choose another exhibit.",
+                    "Droga jest teraz zamknięta. Poczekaj chwilę albo wybierz inny eksponat.")
+        }
+    }
+
+    private func handleServerError(_ code: String) {
+        switch code {
+        case "DESTINATION_OUTSIDE_MAP", "DESTINATION_BLOCKED":
+            // The server can't route there: the phone's map does it.
+            serverRefusedDestination = true
+            fallBackToLocal(notice: nil)
+        default:
+            break
+        }
+    }
+
+    private func serverStateChanged(_ state: PositionSocket.State) {
+        guard state != .online else { return }
+        fallBackToLocal(notice: tr("No connection to the server. Guiding from the map on your phone.",
+                                   "Brak połączenia z serwerem. Prowadzę według mapy w telefonie."))
+    }
+
+    private func handlePolicy(_ policy: PositionSocket.Policy) {
+        if policy.alarmActive, !alarmActive {
+            startAlarm()
+        } else if !policy.alarmActive, alarmActive {
+            endAlarm()
+        }
+        // Areas opened or closed: re-plan the phone's own route around them.
+        if routeSource == .local, target != nil { planLocalRoute() }
+    }
+
+    // MARK: - Alarm
+
+    static func isExit(_ exhibit: MuseumInfo.Exhibit) -> Bool {
+        exhibit.key == exitKey
+    }
+
+    private func startAlarm() {
+        alarmActive = true
+        alarmEvent += 1
+        if let target, !Self.isExit(target) { targetBeforeAlarm = target }
+        statusMessage = tr("Alarm: follow the bloops to the exit.", "Alarm: idź za dźwiękiem do wyjścia.")
+        say([Utterance(text: tr("Attention: the museum alarm is on. I'll guide you to the nearest exit.",
+                                "Uwaga: w muzeum ogłoszono alarm. Prowadzę do najbliższego wyjścia."), toward: nil, scope: .guidance)])
+        // Head for the nearest exit right away; the server's own choice replaces it when it arrives.
+        let serverExits = server.policy?.exits.map(\.point) ?? []
+        let exits = serverExits.isEmpty ? (MuseumGrid.shared?.exits ?? []) : serverExits
+        if let nearest = exits.min(by: { simd_distance($0, position) < simd_distance($1, position) }) {
+            headForExit(nearest)
+        }
+    }
+
+    private func endAlarm() {
+        alarmActive = false
+        alarmEvent += 1
+        statusMessage = nil
+        let previous = targetBeforeAlarm
+        targetBeforeAlarm = nil
+        guard let target, Self.isExit(target) else {
+            say([Utterance(text: tr("The alarm is over.", "Alarm odwołany."), toward: nil, scope: .guidance)])
+            return
+        }
+        endGuidance(tellServer: false)
+        if let previous {
+            say([Utterance(text: tr("The alarm is over. Back to \(previous.name).", "Alarm odwołany. Wracam do: \(previous.name)."),
+                           toward: previous.floorPoint, scope: .guidance)])
+            navigate(to: previous, announce: false)
+        } else {
+            say([Utterance(text: tr("The alarm is over.", "Alarm odwołany."), toward: nil, scope: .guidance)])
+        }
+    }
+
+    /// Guidance to the emergency exit at `point` (the server picks the exit during an alarm; we don't send it).
+    private func headForExit(_ point: SIMD2<Float>) {
+        if let target, Self.isExit(target), let current = destinationPoint, simd_distance(current, point) < 1 { return }
+        target = MuseumInfo.Exhibit(key: Self.exitKey, node: "", title: tr("Emergency exit", "Wyjście ewakuacyjne"),
+                                    gallery: "", text: "", position: [point.x, 0, point.y], yawDegrees: 0,
+                                    detailModel: "", footprint: [1, 1])
+        preview = nil
+        arrived = nil
+        arrivingSince = nil
+        onTrack = false
+        startRoute(to: point, tellServer: false)
     }
 
     /// Demo walk: 1.3 m/s along the route, facing where you're going.

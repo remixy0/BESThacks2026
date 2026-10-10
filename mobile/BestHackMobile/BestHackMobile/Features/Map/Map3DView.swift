@@ -1,4 +1,5 @@
 import RealityKit
+import simd
 import SwiftUI
 
 #if canImport(UIKit)
@@ -13,7 +14,9 @@ private typealias PlatformColor = NSColor
 /// - `.overview`: the museum from above at an angle, like Apple Maps' 3D. It follows you and turns with your AirPods.
 /// - `.eyeLevel`: first person, standing where you are and looking where your AirPods face.
 ///
-/// Only you move it: no dragging, no phone compass. Pinch zooms the overview.
+/// Overview: drag to look around the museum (the map then holds still instead of turning with your head),
+/// pinch to zoom, the location button brings it back to you. First person: no gestures at all, only your AirPods
+/// turn the view, so nothing on screen can throw off the direction you hear.
 ///
 /// Pins and gallery names are drawn in one Canvas over the 3D scene: SwiftUI renders each pin once as a symbol,
 /// and every frame just places those pictures. That's far cheaper than dozens of views moving every frame.
@@ -36,6 +39,13 @@ struct Map3DView: View {
     /// Overview zoom: metres from the camera to you.
     @State private var distance: Float = 90
     @State private var zoomStart: Float?
+    /// Overview: how far you've dragged the map away from yourself (metres on the floor).
+    @State private var panOffset = SIMD2<Float>.zero
+    @State private var panStart: SIMD2<Float>?
+    /// While dragged away, the map holds this heading instead of turning with your head.
+    @State private var heldBearing: Float?
+
+    private var isPanned: Bool { heldBearing != nil || simd_length(panOffset) > 0.5 }
 
     /// A dark dusk sky: easy on the eyes, and the lit museum stands out against it.
     private static let sky = LinearGradient(colors: [Color(hex: 0x1C2029), Color(hex: 0x353C49)], startPoint: .top, endPoint: .bottom)
@@ -67,12 +77,24 @@ struct Map3DView: View {
                 }
             }
             .contentShape(Rectangle())
-            .gesture(zoomGesture)
+            // First person: no drag or pinch at all (only the AirPods steer).
+            .gesture(SimultaneousGesture(panGesture(size: geo.size), zoomGesture),
+                     including: style == .overview ? .all : .subviews)
             .onTapGesture(coordinateSpace: .local) { location in
                 selectPin(at: location, size: geo.size)
             }
         }
         .background(Self.sky)
+        .overlay(alignment: .bottomTrailing) {
+            if style == .overview, isPanned {
+                RecenterButton { recenter() }
+                    .padding(.trailing, 14)
+                    .padding(.bottom, covered.bottom + 12)
+                    .transition(.scale.combined(with: .opacity))
+            }
+        }
+        .animation(.easeOut(duration: 0.2), value: isPanned)
+        .onChange(of: style) { _, _ in recenter() }
         .overlay {
             if !isLoaded {
                 VStack(spacing: 12) {
@@ -93,7 +115,10 @@ struct Map3DView: View {
             }
         }
         .onChange(of: guide.target?.key) { _, key in
-            if key != nil { distance = min(distance, 70) }
+            if key != nil {
+                distance = min(distance, 70)
+                recenter()
+            }
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(style == .eyeLevel ? tr("Eye level view", "Widok z oczu") : tr("3D map", "Mapa 3D"))
@@ -150,8 +175,9 @@ struct Map3DView: View {
                               bearing: facing, eyeLevel: 1)
         }
         // The map turns with your head (with a small deadband); north up without calibrated AirPods.
-        let heading = guide.mapHeading ?? 0
-        let center = centered(guide.position, bearing: heading, distance: distance, size: size)
+        // Dragged away: it holds still where you put it.
+        let heading = heldBearing ?? guide.mapHeading ?? 0
+        let center = centered(guide.position + panOffset, bearing: heading, distance: distance, size: size)
         return CameraGoal(focus: center, distance: distance, pitch: overviewPitch(distance), bearing: heading, eyeLevel: 0)
     }
 
@@ -291,7 +317,37 @@ struct Map3DView: View {
         return labels
     }
 
-    // MARK: - Zoom (the only gesture)
+    // MARK: - Gestures (overview only)
+
+    /// Drag the floor under your finger. The offset is on the floor, so the map keeps following you while you walk.
+    private func panGesture(size: CGSize) -> some Gesture {
+        DragGesture(minimumDistance: 8)
+            .onChanged { value in
+                guard style == .overview else { return }
+                if panStart == nil {
+                    panStart = panOffset
+                    if heldBearing == nil { heldBearing = guide.mapHeading ?? 0 }
+                }
+                let bearing = heldBearing ?? 0
+                let metresPerPoint = 2 * distance * tan(MapCameraRig.fieldOfView / 2) / Float(max(size.height, 1))
+                let right = MuseumGeometry.forward(yaw: bearing - .pi / 2)
+                let forward = MuseumGeometry.forward(yaw: bearing)
+                let sideways = Float(value.translation.width) * metresPerPoint
+                let along = Float(value.translation.height) * metresPerPoint / max(sin(overviewPitch(distance)), 0.3)
+                let wanted = (panStart ?? .zero) - right * sideways + forward * along
+                // Not off into the void: the focus stays over the building.
+                let focus = simd_clamp(guide.position + wanted, SIMD2(-110, -72), SIMD2(110, 72))
+                panOffset = focus - guide.position
+            }
+            .onEnded { _ in panStart = nil }
+    }
+
+    /// Back to following you (and turning with your head).
+    private func recenter() {
+        panStart = nil
+        panOffset = .zero
+        heldBearing = nil
+    }
 
     private var zoomGesture: some Gesture {
         MagnifyGesture()
@@ -310,6 +366,28 @@ struct Map3DView: View {
             parts.append(tr("Nearest exhibit: ", "Najbliższy eksponat: ") + "\(nearest.name), \(guide.directions(to: nearest)).")
         }
         return parts.joined(separator: " ")
+    }
+}
+
+// MARK: - Back to me
+
+/// The round "back to my position" button shown after dragging a map. A plain button on purpose: it doesn't stop
+/// the guide talking (unlike the app's other buttons), it only moves the map.
+struct RecenterButton: View {
+    var action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "location.fill")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(Theme.accentText)
+                .frame(width: 50, height: 50)
+                .background(Circle().fill(Theme.card))
+                .overlay(Circle().strokeBorder(Theme.line, lineWidth: 1))
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(tr("Back to my position", "Wróć do mojej pozycji"))
     }
 }
 
