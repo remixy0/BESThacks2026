@@ -1,0 +1,8 @@
+# Secrets (the app's ".env"): never commit real keys
+Secrets.plist
+
+# Xcode / macOS
+xcuserdata/
+DerivedData/
+build/
+.DS_Store

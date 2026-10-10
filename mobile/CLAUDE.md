@@ -1,161 +1,210 @@
 # Spatial Bloop – project notes (read this first)
 
 Handover notes for a new Claude session (or a teammate). It covers what the project is, where everything lives,
-how the pieces fit, and what's still open. Last updated: 10 Oct 2026 (BEST Hacks 2026).
+how the pieces fit, and what's still open. Last updated: 10 Oct 2026, late evening (BEST Hacks 2026).
 
 ## 1. What it is
 
 **Spatial Bloop** is an iPhone audio guide to the **Field Museum's Main Level (Chicago)**:
-1. You put on AirPods and pick an exhibit.
-2. You follow 3D "bloop" sounds placed a few metres ahead of you along the route.
+1. You log in (or tap *Try the demo*), calibrate on a known spot, and put on AirPods.
+2. You pick an exhibit and follow 3D "bloop" sounds placed a few metres ahead of you along the route.
 3. When you arrive, the guide tells you the exhibit's story.
 
+**Where you are** comes from **BLE beacons** (iBeacons, UUID `DFB76639-2B31-46CB-AAD1-63470563632E`, positions from
+the team backend). **Which way you face** comes **only from AirPods** head tracking, lined up at calibration.
+There is no GPS and no phone compass any more.
+
+**Language:** Polish by default, English switchable (login screen, intro, Settings). All UI, speech and the museum
+texts (Polish exhibit titles/stories/place names in `Models/Language.swift`) follow it; use `tr("English", "Polski")`
+for every user-facing string (`trNow` in nonisolated code). **Voice commands** via ElevenLabs speech-to-text (Scribe).
+
 The app has two modes:
-- **Map mode** (default) looks like Duolingo: friendly, rounded, chunky buttons, and a mascot called *Bloop*.
-  The map is 3D by default, Apple-Maps style, with a first-person "Look" view and a 2D floor plan.
-- **Listening mode** is for blind or low-vision users: no map, big spoken buttons, VoiceOver-friendly.
+- **Map mode** (default): calm, flat look (indigo actions, coral for sound/route, warm off-white page). 3D map by
+  default (Apple-Maps style), first-person "Look" view and 2D plan, switched with a sliding control.
+- **Listening mode** for blind or low-vision users: four big bright corners = the four nearest exhibits, spoken
+  positions, strong haptics, tap to choose + tap again to confirm.
 
 Design rules the owner asked for:
-- Simple, Duolingo-like look.
-- The app guides you step by step and never shows too many options at once.
-- 3D is the default map, with a first-person view.
+- Simple UI, but **not** a Duolingo clone (no chunky 3D buttons, no cartoon mascot, no confetti/pop-ups).
+- Few things on screen; the app guides you one step at a time.
+- 3D is the default map, with a first-person view. The map moves only with you/your AirPods (no finger dragging,
+  no phone motion); pinch-zoom is allowed.
 - Models are simpler than the original detailed ones but nicer than the plain "clay" version, in Apple Maps 3D style.
+- Performance matters (the previous version lagged).
 
 ## 2. Folder layout (`~/BEST hacks 2026/mobile/`)
 
 ```
 mobile/
 ├── CLAUDE.md                 ← this file
+├── backups/                  tarballs taken before big changes (BestHackMobile-before-redesign-2026-10-10.tar.gz),
+│                             removed-files/ (files taken out of the target: Mascot, LocationService, GeoReference)
 ├── resources.zip             backup of the OLD resources (detailed textured models + old generator). Keep.
-├── resources/                3D models + generator (see §5)
-│   ├── MuseumMap.usdz        building (used for the 3D map AND first-person view)
-│   ├── Artifacts/*.usdz      8 exhibit models
-│   ├── Thumbnails/<key>.png  exhibit pictures (also in the app's asset catalog)
-│   ├── FieldMuseum_MainLevel_info.json   floor plan + exhibits data (same as the app copy)
-│   ├── previews/*.png        renders for a quick look
-│   ├── tools/                Python generator (numpy; Playwright+Chromium for pictures)
-│   └── README.md
+├── resources/                3D models + generator (see §8)
 └── BestHackMobile/           the Xcode project (git repo; only "Initial Commit" so far, all newer work is uncommitted)
     ├── BestHackMobile.xcodeproj
     │   └── xcshareddata/xcschemes/BestHackMobile.xcscheme   shared scheme, Metal API Validation OFF (see §7)
+    ├── AppInfo.plist         partial Info.plist (ATS: plain http allowed for a local backend), merged by Xcode
     ├── Secrets.example.plist
-    ├── README.md             user-facing README (features, setup, route API)
+    ├── README.md             user-facing README (features, setup, backend API, route API)
     └── BestHackMobile/       sources (Xcode "synchronized folder": new files are picked up automatically)
 ```
+
+Sibling folders `../backend`, `../embedded` (ESP32 beacon firmware) and `../frontendWeb` exist but haven't been
+read by Claude yet (access wasn't granted). The backend contract the app expects is in README → Backend API.
 
 ## 3. Build settings that matter
 
 - **Xcode 27 / iOS 27 SDK.** `IPHONEOS_DEPLOYMENT_TARGET = 27.0`.
 - **Multiplatform target:** iPhone, iPad, Mac and Vision (`SUPPORTED_PLATFORMS` includes macosx and xros).
-  Wrap iOS-only APIs in `#if os(iOS)`, and use `UIColor`/`NSColor` via `#if canImport(UIKit)`.
-- **Swift 5 language mode,** `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, `SWIFT_APPROACHABLE_CONCURRENCY = YES`.
-  Everything is MainActor by default. Pure data and maths types are marked `nonisolated` (e.g. `MuseumInfo`, `MuseumGeometry`, the Shapes).
-- **Synchronized root group** (`PBXFileSystemSynchronizedRootGroup`): any file added under `BestHackMobile/BestHackMobile/` is in the target. You never need to edit `project.pbxproj` to add files.
-- **iPhone is portrait-only** (`INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait`).
-- **Info.plist keys** are generated: location ("when in use") and motion (AirPods head tracking).
+  Wrap iOS-only APIs in `#if os(iOS)` (beacon ranging, Core Haptics, UIApplication), and use `UIColor`/`NSColor` via `#if canImport(UIKit)`.
+- **Swift 5 language mode,** `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, `SWIFT_APPROACHABLE_CONCURRENCY = YES`,
+  `MEMBER_IMPORT_VISIBILITY` on (import every module you use in each file).
+  Everything is MainActor by default. Pure data and maths types are marked `nonisolated` (e.g. `MuseumInfo`,
+  `BeaconPositioner`, `BeaconDirectory`, `CalibrationSpot`, `BackendClient`, error enums, the Shapes). A struct created
+  inside a `nonisolated` delegate callback must itself be `nonisolated` (e.g. `BeaconScanner.Reading`).
+- **Synchronized root group** (`PBXFileSystemSynchronizedRootGroup`): any file added under `BestHackMobile/BestHackMobile/` is in the target. You never need to edit `project.pbxproj` to add files. Removing a file from that folder removes it from the target.
+- **iPhone is portrait-only.**
+- **Info.plist:** generated from build settings (location "when in use" = needed for beacon ranging, motion = AirPods,
+  microphone = voice commands, speech recognition = wake phrase, local network) **plus** `AppInfo.plist` via `INFOPLIST_FILE` (only `NSAppTransportSecurity/NSAllowsArbitraryLoads`;
+  don't add `NSAllowsLocalNetworking` next to it, iOS then ignores ArbitraryLoads).
 - **Secrets:** `BestHackMobile/Config/Secrets.plist` (git-ignored) holds
   - `ELEVENLABS_API_KEY`
+  - `BACKEND_URL` (can also be set in the app; the in-app value wins)
   - `ROUTE_API_URL`
-  - `ROUTE_Y_AXIS`
+  - `ROUTE_Y_AXIS` (applies to routes, beacon positions and the calibration spot)
+  - `CALIBRATION_POINT` ("x, y, facingDegrees")
 
-  Never print or commit it.
+  Never print or commit it. (The owner's copy may not have the new keys yet; all are optional.)
 
 ## 4. Source map (`BestHackMobile/BestHackMobile/`)
 
 | Path | What it does |
 |---|---|
 | `App/BestHackMobileApp.swift` | `@main`, shows `RootView`. |
-| `App/RootView.swift` | Owns `GuideModel` + `VisitLog`. First launch → `WelcomeView` (intro), afterwards → `MapScreen`. Sets `.fontDesign(.rounded)`. |
-| `Design/Theme.swift` | **Design system:** colours (light/dark), `Theme.title(.title)` fonts (Dynamic Type), `ChunkyButtonStyle` (kinds: primary, blue, orange, danger, secondary, secondaryDanger, quiet), `RoundIconButtonStyle`, `ChunkyCardButtonStyle`, `.chunkyCard()`, `.floatingPanel()`, `ChunkyProgressBar`, `Chip`, `ExhibitThumbnail` (shows `Image("Exhibit-<key>")`). |
-| `Design/Mascot.swift` | `Mascot` (Bloop: moods happy/talking/thinking/cheering, blinks, bobs), `MascotSays` (speech bubble), `ConfettiView`. |
-| `Features/Welcome/WelcomeView.swift` | 4-step intro with a progress bar: hello → mode (`ChoiceCard`) → headphone left/right test → location permission. |
-| `Features/Map/MapScreen.swift` | Main screen: map layer, `TopBar` (place chip, DEMO tag, ★ seen/total, settings), `MapStylePicker` (3D / Look / 2D), locate button, `WalkPad` (demo arrows in Look view), `NoticeBanner`, sheets (exhibits, settings, detail), `ArrivalView` overlay, haptics. Measures the top bar and card heights (`covered` insets) so the maps centre on the visible area. |
-| `Features/Map/GuidePanel.swift` | The single bottom card. `ExploreCard` ("Next up" = nearest unvisited exhibit + Let's go + 2 small buttons + All exhibits), `PreviewCard`, `WalkingCard` (turn arrow, meters to go, progress, Repeat, Walk me there (demo), ✕ with confirmation), `StoryButton` (Hear its story ↔ Stop), `ArrivalView` (confetti, +1 ★, "Next: …"), `ListenModeView` + `BigButton`, helpers `nextExhibits()` and `turnInstruction()`. |
-| `Features/Map/Map3DView.swift` | 3D map (RealityKit `RealityView`, `content.camera = .virtual`). Overview ↔ eye-level blend, gestures (pan, pinch 25–450 m, rotate; drag to look in eye level; tap the floor to move in demo), SwiftUI pin overlay (`ExhibitPin`) + gallery labels. `MuseumMapScene` = the RealityKit side (lights + shadows, building, exhibits, user marker, route band, highlight disc). It squashes the building groups `Walls/Hall/Blocks/Entrances` to 42 % height in the overview. |
-| `Features/Map/MapCamera.swift` | `MapStyle` enum, `CameraGoal`, `MapCameraRig` (smoothing per frame, pose, `project()` world→screen, `floorPoint()` screen→floor). FOV 60° vertical. |
-| `Features/Map/Map2DView.swift` | Canvas floor plan (north up), tap pins / tap the floor to move (demo). |
+| `App/RootView.swift` | `AppModel.shared` (owns `GuideModel`, `VisitLog`, `AccountStore`, `calibrationDone`; a singleton so no throwaway copies). Phases: login → welcome (first time) → calibration (every launch) → museum. Starts/stops the guide with scene phase, keeps the screen on in the museum, preloads 3D models + beacon list at launch. |
+| `Design/Theme.swift` | **Design system:** colours (`accent`, `accentSoft`, `accentText`, `coral`, `coralText`, `mint`, `mintText`, `amber`, `red`, `redText`, `ink`, `inkSoft`, `page`, `card`, `cardSunken`, `line`, `lineStrong`), system fonts (`Theme.title(.title)` etc., Dynamic Type), `AppButtonStyle` (primary, secondary, danger, secondaryDanger, quiet), `RoundIconButtonStyle`, `CardButtonStyle`, `.card()`, `.floatingPanel()`, `ProgressLine`, `Chip`, `Eyebrow`, `ExhibitThumbnail`. |
+| `Design/BloopOrb.swift` | The app's mark (sound source with rings; ripples only while talking). Replaced the cartoon mascot. |
+| `Features/Login/LoginView.swift` | Email + password → `AccountStore.signIn`; *Try the demo* → `signInDemo()` (test@test.test / test, always continues); server URL editor. |
+| `Features/Welcome/WelcomeView.swift` | 4-step intro: hello → mode (`ChoiceCard`) → AirPods left/right test → beacons (asks location permission). |
+| `Features/Calibration/CalibrationView.swift` | Stand on the spot, face front, tap Calibrate, hold still 3 s (`guide.beginCalibration()` → `finishCalibration()`). Shows AirPods + beacon status. Listening mode: spoken instructions, bottom half is one big button. |
+| `Features/Map/MapScreen.swift` | Map mode screen: map layer, top row (`MapStyleSlider` 3D/Look/2D + settings), auto-hiding `NoticeBanner`, `GuidePanel`, sheets. `GuideEvents` = tiny view that owns all haptic triggers + marks visits (so guide events don't redraw the screen). Routes to `ListenModeView` in listening mode. |
+| `Features/Map/GuidePanel.swift` | The one bottom card. `ExploreCard` (place + position dot, "You're at X · Story" when at an exhibit, Next up, Let's go, all-exhibits button), `PreviewCard`, `WalkingCard` (arrow, metres, progress, Repeat, ✕ with confirmation), `StoryButton`, `nextExhibits()`, `turnInstruction()`. No arrival pop-up. |
+| `Features/Map/Map3DView.swift` | 3D map (RealityKit `RealityView`, `content.camera = .virtual`). Overview ↔ eye-level blend. Camera always follows `guide.position`; overview bearing = `guide.mapHeading` (AirPods with 4° deadband, north-up without); eye level = `guide.facingYaw`. Only gesture: pinch zoom (25–300 m) + tap pins. Pins and room labels are **Canvas symbols** placed each frame (not SwiftUI views). `MuseumMapScene` = RealityKit side (2 directional lights, **no shadows**, building, exhibits, user marker, coral route band, highlight disc). |
+| `Features/Map/MapCamera.swift` | `MapStyle`, `CameraGoal`, `MapCameraRig` (smoothing per frame, pose, `projector(in:)` world→screen). **FOV 75° vertical.** |
+| `Features/Map/Map2DView.swift` | Canvas floor plan (north up), centred on you, pinch zoom, tap pins. Shows beacon accuracy circle. |
 | `Features/Map/MapPalette.swift` | 2D map colours (floor tints match the 3D model). |
-| `Features/Artifacts/` | `ArtifactListView` (grid of all exhibits + progress), `ArtifactDetailView` (turning 3D model, story, pinned Let's go / Hear its story, optional Close), `ArtifactModelView` (turntable RealityView, falls back to the thumbnail). |
-| `Features/Settings/SettingsView.swift` | Short settings (mode, guide toggles, bloop volume, headphones, demo, intro again, reset visits) + `AdvancedSettingsView` ("Voice and advanced": voice engine, ElevenLabs key, location source, route service, credits). |
+| `Features/Listen/ListenModeView.swift` | Listening mode: 2×2 grid (yellow/blue/pink/green, black text) of `MuseumInfo.nearest(to:count:4, excluding: atExhibit)`. On show: `Haptics.attention()` + spoken list (each option from its direction). Tap → `Haptics.selected()` + "…tap again to go there"; same corner within 20 s → `Haptics.confirmed()` + `navigate`. Hold → repeat. Walking: top half directions (hold = story), bottom half stop (tap twice). Choices are kept stable until guidance ends / you ask again. |
+| `Features/Artifacts/` | `ArtifactListView` (grid + progress), `ArtifactDetailView`, `ArtifactModelView` (turntable driven by `SceneEvents.Update`, not a SwiftUI timeline). |
+| `Features/Settings/SettingsView.swift` | Settings (mode, Voice, Calibrate again, guide toggles, position + demo walk, account: back to welcome screen, reset visits, log out), `VoicePickerView` (Apple/ElevenLabs, voice list with ▶︎ preview, quality, saved speech: count/size, download stories, delete; custom voice ID), `AdvancedSettingsView` (server, beacons, ElevenLabs key, routes, credits), `BeaconsView` (live RSSI/distance per beacon, path-loss exponent stepper). |
 | `Models/GuideModel.swift` | **The guide (core logic, `@Observable`)**, see §6. |
-| `Models/VisitLog.swift` | Visited exhibits (★), persisted in UserDefaults `visits.exhibits`. |
+| `Models/Language.swift` | `AppLanguage` (pl default / en), `LanguageSettings.shared`, `tr(en, pl)`, `trNow`, `metersText` (Polish plurals), `MuseumText` (Polish exhibit titles/galleries/stories + place names), `Exhibit.name/galleryName/story`, `placeText()`. |
+| `Models/VoiceCommands.swift` | Pure keyword parser (pl + en): corner by position/colour/number, exhibit names, yes/no, story, next, repeat, stop, where am I, which way. Words are folded (lowercase, no accents, ł→l). |
+| `Models/VoiceControl.swift` | Listen once: beep → `VoiceRecorder` (stops after ~1 s of quiet) → `ElevenLabsSTT` → `VoiceCommands.parse`. `state` idle/listening/thinking, `problem`. |
+| `Audio/WakeWordListener.swift` | Wake phrase (Settings › "Mów bez dotykania"): Apple `SFSpeechRecognizer` (pl-PL/en-US, on-device when supported) on its own `AVAudioEngine` input tap, fuzzy match on folded words, restarts every 50 s. On hearing it: `heardEvent += 1` → map mode `runMapVoice`, listening mode `listenAndAct()`. `GuideModel.listen()` calls `suspend()`/`resume()` around recording; `start()`/`stop()` follow the guide. Off by default (mic stays on). |
+| `Audio/VoiceRecorder.swift` | AVAudioRecorder (16 kHz AAC) with metering, adaptive speech threshold, mic permission (`AVAudioApplication`). |
+| `Services/ElevenLabs/SpeechCache.swift` | **TTS cache.** `SpeechCache.shared`: every ElevenLabs sentence is saved as raw PCM16 24 kHz in Library/Caches/ElevenLabsSpeech, key = SHA-256 of voice + model + speed + text ("v1|pcm_24000|…"; bump "v1" if the request/voice settings change). Saved → played from the phone, no request; in-flight downloads are shared (`SpeechClip`, many listeners); a started download always finishes and is saved even if playback stops; LRU trim above 250 MB. `ElevenLabsTTS.stream` reads through it, `ElevenLabsTTS.download` does the actual request. GuideModel: stories are spoken as two sentences ("Name." + story) so the story recording is shared; `speakNext` prefetches the next queued sentence; `downloadStories()` / `storyDownload` / `savedStoryCount()` back Settings › Voice › "Zapamiętane nagrania". STT is never cached. |
+| `Services/ElevenLabs/ElevenLabsSTT.swift` | `POST /v1/speech-to-text`, model `scribe_v2` (falls back to `scribe_v1` on 400/422), `language_code` pol/eng. Key needs Speech to Text permission. |
+| `Models/AccountStore.swift` | Account (UserDefaults `account.current`), token (Keychain), server override (UserDefaults `backend.url`), `backend` client. |
+| `Models/CalibrationSpot.swift` | Calibration spot (point, facing, spoken name). Default South Entrance (0.2, 56) facing north; Secrets `CALIBRATION_POINT`; backend may override. |
+| `Models/VisitLog.swift` | Visited exhibits, persisted in UserDefaults `visits.exhibits`. |
 | `Models/UserMode.swift` | `.standard` ("With the map") / `.blind` ("Just listening"). |
-| `Models/VoiceSettings.swift` | Apple vs ElevenLabs voice, key in Keychain. |
-| `Models/Museum/MuseumInfo.swift` | Decodes the info JSON; `MuseumGeometry` (yaw maths, point-in-polygon). |
-| `Audio/` | `SpatialAudioEngine` (AVAudioEnvironmentNode HRTF: bloop + spoken voice placed in 3D), `Bloop`, `SpeechOutput`, `AppleSpeech`. |
-| `Services/Location/` | `LocationService` (GPS + compass → model coords; falls back to a **simulated** position when not at the museum), `GeoReference`. |
-| `Services/Routing/` | `RouteProvider` (straight line or your `ROUTE_API_URL`), `RouteMath`, `RouteDecoder`. |
-| `Services/` | `HeadTracker` (AirPods `CMHeadphoneMotionManager`), `KeychainStore`, `MuseumAssets` (finds `.usdz`/JSON in the bundle; `map()` loads **MuseumMap.usdz**), `ElevenLabs/`. |
-| `Resources/Museum/` | `MuseumMap.usdz`, `Artifacts/*.usdz`, `FieldMuseum_MainLevel_info.json`. |
-| `Resources/Assets.xcassets` | `Exhibits/Exhibit-<key>` pictures, AccentColor (#1EA5F2). |
+| `Models/VoiceSettings.swift` | Apple vs ElevenLabs voice, key in Keychain, `availableVoices` (account voices, else `ElevenLabsTTS.premadeVoices`), `client(voiceID:)`. |
+| `Models/Museum/MuseumInfo.swift` | Decodes the info JSON (room polygons/centres/bounding boxes precomputed); `nearest(to:count:excluding:)`; `MuseumGeometry`. |
+| `Audio/` | `SpatialAudioEngine` (HRTF bloop + spoken voice in 3D; `bloopStyle`, one buffer per style), `Bloop` (sounds: `buffer` guiding, `drop` calm wooden tok, `softTone` chill G4 tone, `chime`, `listenCue`), `BloopStyle` (guiding/calm/chill: `beat(degrees:onTrack:metersLeft:)` → interval/pitch/volume/muffled, `onTrackPause`, `minimumGap`, `chimeVolume`, `chimeCooldown`), `SpeechOutput`, `AppleSpeech` (voice lookup cached per language). |
+| `Services/Beacons/BeaconScanner.swift` | Core Location iBeacon ranging for the UUID (iOS only; Core Bluetooth can't see iBeacons). ~1 Hz `onReadings`. |
+| `Services/Beacons/BeaconPositioner.swift` | Pure maths: RSSI smoothing (EMA 0.35, stale after 4 s), log-distance model (n = 2.3, per-beacon calibration offsets), weighted Gauss–Newton trilateration (≥2 beacons), circle projection (1 beacon), calibration offsets (half shared median, half per beacon, ±15 dB). |
+| `Services/Beacons/BeaconDirectory.swift` | Flexible decoder for the backend's beacon list (+ optional calibration spot). Lookup by major/minor (or minor only). |
+| `Services/Location/PositionService.swift` | Beacons → filtered position (max step 1.8 m/s + 1.5 m, gain by accuracy), `source` (.beacons/.lastKnown/.demo), status text, directory cache (UserDefaults `beacons.directory`), offsets (UserDefaults `beacons.offsets`), `calibrate()`, demo walk positions. |
+| `Services/Backend/BackendClient.swift` | Login + beacons, path fallbacks on 404, bearer token. |
+| `Services/Haptics.swift` | Core Haptics patterns for listening mode: `attention` (3 knocks), `selected` (long buzz), `confirmed` (long-short-long), `warning`. |
+| `Services/` | `HeadTracker` (AirPods; `yaw` not observed; `session` bumps on reconnect), `KeychainStore` (generic service/account), `MuseumAssets` (**caches** loaded entities, returns clones; `preload`), `Routing/`, `ElevenLabs/`. |
+| `Resources/` | `Assets.xcassets` (`Exhibits/Exhibit-<key>`), `Museum/` (`MuseumMap.usdz`, `Artifacts/*.usdz`, info JSON). |
 
 **UserDefaults / AppStorage keys:**
-- App state: `userMode`, `onboarding.done`, `map.style`, `visits.exhibits`
-- Guide settings: `guide.autoAnnounce`, `guide.selectByLooking`, `audio.bloopVolume`, `location.source`
-- Voice: `voice.engine.v2`, `voice.elevenLabs.voiceID`, `voice.elevenLabs.model`
+- App state: `userMode`, `onboarding.done`, `map.style`, `visits.exhibits`, `account.current`, `backend.url`
+- Guide settings: `guide.autoAnnounce`, `guide.selectByLooking.v2` (default off), `guide.listenOnArrival`, `audio.bloopVolume`, `audio.bloopStyle` (guiding/calm/chill, default guiding), `app.language`
+- Beacons: `beacons.directory`, `beacons.offsets`
+- Wake phrase: `voice.wakeWord.enabled` (default off), `voice.wakeWord.phrase` (empty = "Hej przewodniku" / "Hey guide")
+- Voice: `voice.engine.v2`, `voice.elevenLabs.voiceID`, `voice.elevenLabs.model`, `voice.speed`, `voice.elevenLabs.userPicked`
+- Keychain: service `ElevenLabs`/`api-key`, service `Backend`/`token`
 
 ## 5. Museum data and coordinates
 
 - **Units and axes:** metres, **+x east, −z north, +y up**, floor at y = 0. The origin is the centre of the building, rotated 1.03° so the walls are axis-aligned. A 2D floor point is `(x, z)`.
 - **Yaw:** 0 = facing north (−z), positive = turned left. `MuseumGeometry.forward(yaw:)` / `yaw(from:to:)`.
-- **The JSON** (`FieldMuseum_MainLevel_info.json`) contains:
-  - `rooms[]`: outline, theme, status open/closed/staff_only
-  - `exhibits[]`: key, title, gallery, text, position, yaw_degrees, footprint_m, detail_model
-  - `displays[]`: vitrines and dioramas
-  - `doors[]`, `points_of_interest[]`
-  - `meta.nave`: Stanley Field Hall rectangle
-  - `building_outline`
-  - `georeference`: GPS → model coordinates
-- **Exhibit keys:**
-  - `maximo` (Máximo the Titanosaur, hall)
-  - `elephants` (Fighting African Elephants, hall)
-  - `totems` (Totem Poles, hall)
-  - `tsavo_lions` (Mammals of Africa)
-  - `seabirds` (Birds)
-  - `mask` (Greenstone Mask, Ancient Americas)
-  - `pawnee_lodge` (Ancient Americas)
-  - `mastaba` (Inside Ancient Egypt)
-- **Simulated start:** (0.2, 56), just inside the South Entrance.
-- **Data licence:** © 2020 Field Museum, CC BY 4.0. The credit must stay in the app (it's in Settings → Voice and advanced → About).
+- **The JSON** (`FieldMuseum_MainLevel_info.json`): `rooms[]`, `exhibits[]`, `displays[]`, `doors[]`,
+  `points_of_interest[]`, `meta.nave` (Stanley Field Hall), `building_outline`, `georeference` (unused now).
+- **Exhibit keys:** `maximo`, `elephants`, `totems` (hall), `tsavo_lions` (Mammals of Africa), `seabirds` (Birds),
+  `mask`, `pawnee_lodge` (Ancient Americas), `mastaba` (Inside Ancient Egypt).
+- **Default calibration spot / start:** (0.2, 56), just inside the South Entrance, facing north into the hall.
+- **Beacon and route coordinates** use the same (x, z) numbers (y = model z) unless `ROUTE_Y_AXIS = north`.
+- **Data licence:** © 2020 Field Museum, CC BY 4.0. The credit must stay in the app (Settings → Server, beacons and keys → About).
 
 ## 6. GuideModel API (what the UI uses)
 
-- **State:**
-  - Where you are: `position`, `facingYaw?`, `placeName`, `nearby` (3 closest)
-  - Choosing by looking: `faced?`, `dwellProgress`
-  - Selection and guidance: `preview?` (settable), `target?`, `route`, `routeVersion`, `remaining?`, `progress` (0…1), `turn` (.ahead/.left/.right/.around/.unknown), `arrived?`
-  - Messages: `statusMessage?`, `loadError?`
-  - Sub-objects: `info`, `audio` (`isSpeaking`, `speechNotice`, `bloopVolume`), `voice`, `location`, `head`
-  - Settings: `selectByLooking`, `autoAnnounce`, `demoWalk`, `mode`
-- **Haptic counters:** `facedEvent`, `selectionEvent`, `waypointEvent`, `arrivalEvent`, `onTrackEvent`, `offRouteEvent`.
-- **Actions:**
-  - Lifecycle: `start(mode:)`, `stop()`
-  - Guidance: `navigate(to:)`, `stopGuidance()`, `follow(route:to:)`, `follow(routeJSON:)`
-  - Speech: `tellStory(of:)`, `announceNearby()`, `announceLocation()`, `announceDirection()` (added this session: "Turn left. 24 meters to …"), `stopSpeaking()`
-  - Directions text: `directions(to:)` ("12 m ahead"), `spokenDirections(to:)`, `distance(to:)`
-  - Setup and demo: `playTestBloop(onLeft:)`, `requestLocationPermission()`, `alignHeadphones()`, `moveSimulated(to:)`, `walkSimulated(by:)`, `turnSimulated(by:)`
-- **Behaviour:**
-  - It ticks 20×/s.
-  - Arrival is when you're within 2 m of the route end or footprint + 2 m.
-  - Off-route is more than 8 m away; it then re-routes.
-  - Facing an exhibit for 1.5 s chooses it.
-- **Route service:** `POST ROUTE_API_URL {"from":{x,y},"to":{id,name,x,y}}` → list of points (y = model z). The full format is in the app README.
+- **Fine state (maps only; changes often):** `position` (smoothed toward `positioning.position` at 20 Hz),
+  `facingYaw?` (AirPods + calibration offset; nil without calibrated AirPods), `mapHeading?` (facing with 4° deadband).
+- **Coarse state (text/lists; use these in cards so they don't redraw constantly):** `here` (every ~1 m),
+  `heading?` (every ~10°), `placeName`, `nearby` (4 closest), `atExhibit?`. `distance(to:)` and `directions(to:)` use
+  the coarse values; `spokenDirections(to:)` uses the fine ones (it's said once).
+- **Calibration:** `isCalibrated`, `headingCalibrated`, `beginCalibration()`, `finishCalibration() -> CalibrationResult(beacons:airPods:)`, `skipCalibration()`.
+  AirPods reconnect (`head.session` changes) → heading dropped + statusMessage asking to recalibrate.
+- **Guidance:** `preview?` (settable), `target?`, `route`, `routeVersion`, `remaining?`, `progress`, `turn`, `arrived?`;
+  `navigate(to:)` (says "You're already at X" if you are), `stopGuidance()`, `follow(route:to:)`, `follow(routeJSON:)`.
+- **Speech:** `speak(_ [Utterance])` (replace), `speakAfterCurrent(_:)` (queue), `tellStory(of:)`, `announceNearby()`,
+  `announceLocation()`, `announceDirection()`, `previewVoice(id:name:)`, `stopSpeaking()`. `Utterance(text:toward:)`.
+- **Settings:** `selectByLooking` (map mode only, default off), `autoAnnounce` (map mode only, needs calibration), `demoWalk`, `mode`.
+- **Haptic counters:** `facedEvent`, `selectionEvent`, `waypointEvent`, `arrivalEvent`, `onTrackEvent`, `offRouteEvent`
+  (observed only by `GuideEvents`).
+- **Sub-objects:** `info`, `audio`, `voice`, `positioning` (PositionService), `head`.
+- **Screens/sync:** `screen`, `screenGeneration`, `screenAppeared(_:)`, `screenDisappeared(_:)`, `userTapped()`; `Utterance(text:toward:scope:)` with `Scope.screen/.guidance` (see gotcha 13).
+- **Talking:** `voiceInput` (VoiceControl: `listen`, `finishListening` = done talking, `cancel` = throw away), `wakeWord` (WakeWordListener), `listen()` (returns nil if already listening), `perform(heard)` (story/repeat/where/which way/stop),
+  `sayNotUnderstood`, `speechFinishedEvent` + `listenAfterSpeech` (map mode listens after the arrival message;
+  listening mode listens after reading the four options or a choice). `listenOnArrival` setting.
+- **Bloops** (`updateGuidance`): wrong way → every 0.3 s, pitch rising 0.6 → 1.45 as you turn toward the route
+  (muffled when it's behind you); facing it (< 15°, released at 28°) → `onTrack = true`, chime + heavy haptic
+  (`onTrackEvent`), then only a **quiet** bloop (35 % volume, pitch 1.6) every 3.5 s (2 s in the last 6 m); turning away
+  (> 28°) switches straight back to the normal quick bloops. `playBloop(…, volume:)`. No AirPods → steady 0.35–0.9 s.
+  Those numbers are the **Guiding** style. `audio.bloopStyle` (Settings › Guide › "Rytm dźwięków", plays a sample when changed)
+  picks the rhythm + sound from `BloopStyle`: **Calm** = wooden tok, off course every 0.8–1.3 s at 75 %, on course every 6 s
+  (3.5 s near the end) at 30 %, chime 60 %; **Chill** = soft tone, off course every 2–3.5 s at 55 %, on course every 12 s (6 s)
+  at 22 %, chime 35 % and at most every 8 s, min 1.2 s between bloops. Direction cues (position, pitch rise, muffling) are the same.
+- **Sound:** listener orientation includes head pitch and is updated from `HeadTracker.onMotion` at the AirPods' rate.
+  Bloop has harmonics + a noise click (better localisation), reverb blend 0.32, environment reverb −12 dB.
+  Session is `.playAndRecord` + A2DP only (AirPods stay stereo, mic = iPhone). `audio.pause()/resume()` on background.
+- **Arrival also by beacon:** a beacon within ~4 m of an exhibit reading ≤ 1.5–2 m counts as being at that exhibit.
+- **Behaviour:** ticks 20×/s. Arrival = within 2 m of the route end or footprint + 2.5 m **for 0.7 s**.
+  Off-route > 8 m → re-route. Choose-by-facing: 1.5 s, never the exhibit you're standing at (that caused the
+  "arrived" pop-up loop). Demo walk: 1.3 m/s along the route.
 
 ## 7. Gotchas (learned the hard way)
 
-1. **`RealityView` on iOS shows the AR camera by default.** Always set `content.camera = .virtual` in the make closure. Both `Map3DView` and `ArtifactModelView` do. The old 3D map didn't, which (together with a missing `MuseumMap.usdz`) is why it looked broken.
-2. **Simulator crash:** "MTLDebugRenderCommandEncoder … Draw Errors Validation … fsRealityPbr" → killed. Fix: Metal API Validation off. The shared scheme sets `enableGPUValidationMode = "1"`. If the scheme is ever regenerated: Edit Scheme → Run → Diagnostics → uncheck Metal API Validation.
-3. **Background:** the `RealityView` background is transparent with `.backgroundStyle(...)` / `.background(...)`, so the sky is a SwiftUI gradient. The 3D map always uses a light sky, even in dark mode.
-4. **Building group names:** they come from USD prim names (`findEntity(named: "Walls")`). Keep them stable in the generator: `Outside`, `Floors`, `Walls`, `Blocks`, `Hall`, `Entrances`, `Furniture`, `Displays`.
-5. **Pins and labels are SwiftUI overlays,** projected with `MapCameraRig.project()` using the same pose as the RealityKit camera (FOV set with `fieldOfViewOrientation = .vertical`). If you change the FOV, change `MapCameraRig.fieldOfView` only.
-6. **Camera loop:** `MapCameraRig` is deliberately *not* observable. It's advanced inside a `TimelineView` and pauses when settled (via `settleTick`).
-7. **Throwaway instances:** `@State var x = SomeClass()` creates a throwaway instance on every view init, so `MuseumMapScene.init()` is empty and the meshes are built in `build()`.
-8. **Text contrast:** button faces (`Theme.green`, `blue`, `red`) are darkened for white text (≥3:1). Use `blueText`, `greenShade`, `redText` and `inkSoft` for text on cards. `Theme.orange` and `greenBright` are for progress and stars only (no text on them).
-9. **Thumbnails** are `Image("Exhibit-<key>")` from the asset catalog. A new exhibit needs a new imageset (the generator renders it into `resources/Thumbnails/`).
+1. **`RealityView` on iOS shows the AR camera by default.** Always set `content.camera = .virtual` in the make closure.
+2. **Simulator crash:** "MTLDebugRenderCommandEncoder … Draw Errors Validation … fsRealityPbr" → Metal API Validation off (shared scheme sets `enableGPUValidationMode = "1"`).
+3. **Background:** the `RealityView` background is transparent; the sky is a SwiftUI gradient (always daytime).
+4. **Building group names** come from USD prim names (`findEntity(named: "Walls")`). Keep them stable in the generator: `Outside`, `Floors`, `Walls`, `Blocks`, `Hall`, `Entrances`, `Furniture`, `Displays`.
+5. **Pins and labels are Canvas symbols** projected with `MapCameraRig.projector(in:)` (same pose as the RealityKit camera). Change the FOV only in `MapCameraRig.fieldOfView`.
+6. **Camera loop:** `MapCameraRig` is deliberately *not* observable; advanced inside a `TimelineView` that pauses when settled (`settleTick`). Keep camera goals stable (deadbands) or it never pauses.
+7. **Throwaway instances:** `@State var x = SomeClass()` creates a throwaway instance on every view init. App-wide objects live in `AppModel.shared`; `MuseumMapScene.init()` is empty.
+8. **Performance rules:** don't read fine guide state (`position`, `facingYaw`) in cards/lists; don't put `.shadow` or materials over the live 3D view; keep event counters out of big views; RealityKit models come from the `MuseumAssets` cache.
+9. **Text contrast:** white text only on `accent`/`red` faces; use `accentText`, `coralText`, `mintText`, `redText`, `inkSoft` on cards. `amber`/`coral`/`mint` fills are for dots, progress and icons.
+10. **Thumbnails** are `Image("Exhibit-<key>")` from the asset catalog.
+11. **iBeacons need Core Location ranging + location permission**; the Simulator can't range. CLBeacon `rssi == 0` = not heard this round.
+12. **Deleting files on the Mac** from the device shell needs permission; moving them (e.g. into `mobile/backups/removed-files/`) works.
+13. **Sound follows the screen (keep it that way):**
+    - Every screen registers with `.soundScreen(.x, guide:)` (`App/SoundScreen.swift`), or with `guide.screenAppeared(.x)` as the first line of its own `onAppear` when it speaks there (Calibration, ListenModeView).
+    - The screens are `GuideModel.Screen`: login, welcome, calibration, map, listen, plus the overlays settings, exhibits and exhibitDetail. `guide.screen` = the top overlay, else the base screen.
+    - When the front screen changes, `updateFrontScreen` bumps `screenGeneration`, cancels voice input (`VoiceControl.cancel`), drops queued `.screen`-scope utterances and stops the current one, unless it is `.guidance` scope.
+    - `.guidance` scope covers "guiding you to…", arrival + listening-mode story, "guidance stopped" and "calibrated". Everything else is `.screen` (the default `Utterance.scope`).
+    - `guide.listen()` returns nil if the screen changed while you talked.
+    - Auto-listen (`listenAfterSpeech`, `listenWhenQuiet`), wake-phrase handlers and auto-announce only act when `guide.screen` is their own screen. ListenModeView defers announcing choices (`announceWhenShown`) while Settings is on top.
+    - **Taps interrupt speech:** `AppButtonStyle`, `RoundIconButtonStyle` and `CardButtonStyle` are PrimitiveButtonStyles that call `UserTap.happened()` → `guide.userTapped()` (stop talking + cancel a half-said command) *before* the button's action. So new buttons get this for free.
+    - `onTapGesture` controls (listening corners/halves, calibration halves, map pins via `MapScreen.pick`) call `guide.userTapped()` themselves.
+    - `.plain` buttons don't interrupt: VoiceButton, the listen Settings button (which calls `userTapped` itself).
+    - `SpeechCache` cancels a download nobody listens to any more (`whenAbandoned`, not for `prepare`/`load`), so fast tapping never queues stale ElevenLabs requests. `ElevenLabsTTS.stream` retries once if it joined a just-dropped download.
 
 ## 8. 3D models: how to rebuild
-
-Run this on any machine with python3 + numpy (the Mac's Linux shell works):
 
 ```sh
 cd resources
@@ -163,61 +212,55 @@ python3 tools/build_all.py FieldMuseum_MainLevel_info.json .               # mod
 python3 tools/build_all.py FieldMuseum_MainLevel_info.json . --no-pictures  # models only
 ```
 
-The output is deterministic: a rebuild gives byte-identical `MuseumMap.usdz`. After rebuilding:
-1. Copy `MuseumMap.usdz` and `Artifacts/` into `BestHackMobile/BestHackMobile/Resources/Museum/`.
-2. Copy the thumbnails into `Assets.xcassets/Exhibits/Exhibit-<key>.imageset/<key>.png`, cropped square at 480 px.
-
-The generator files:
-- `meshkit.py`: shapes (box, prism, tube along a spline, dome, sphere…), `Scene`
-- `usdz.py`: USDA + UsdPreviewSurface, 64-byte-aligned zip
-- `palette.py`: all colours
-- `build_building.py`: building from the JSON
-  - closed rooms become solid blocks
-  - walkable rooms get painted walls with door openings
-  - the hall gets columns, arches and a balcony
-  - no ceilings
-- `build_exhibits.py`: the 8 exhibits (front faces +z, footprint centred, y = 0 floor)
-- `preview.py`: headless WebGL renderer
-- `build_all.py`: thumbnail camera per exhibit in `THUMBS`
-
+Deterministic output. After rebuilding: copy `MuseumMap.usdz` and `Artifacts/` into
+`BestHackMobile/BestHackMobile/Resources/Museum/`, and the thumbnails into
+`Assets.xcassets/Exhibits/Exhibit-<key>.imageset/<key>.png` (square, 480 px). Generator files: `meshkit.py`,
+`usdz.py`, `palette.py`, `build_building.py`, `build_exhibits.py`, `preview.py`, `build_all.py`.
 Sizes: building ~44k triangles / 2.4 MB, exhibits 0.4k–19k triangles each, ~4.4 MB total.
 
-## 9. Status (end of 10 Oct session)
+## 9. Status (end of 10 Oct, evening session)
 
-**Done:**
-- Full UI redesign: Duolingo style, guided one-card flow, intro, listening mode.
-- 3D default map, first-person Look view, restyled 2D.
-- New Apple-Maps-style models and cleaned-up resources.
-- An independent UI/UX review; its main findings were fixed:
-  - card height
-  - framing
-  - demo stuck
-  - stop speech
-  - contrast
-  - Dynamic Type
-  - tap targets
-  - portrait lock
-  - Metal validation
+**Done this session** (owner's list):
+- New look: indigo/coral/off-white palette, flat buttons, system font, orb mark instead of mascot; no confetti.
+- Simpler map screen: sliding 3D/Look/2D switch + settings on top, one card at the bottom; locate button, star chip,
+  DEMO tag, WalkPad and the extra exhibit row are gone.
+- Performance: Canvas pins/labels, no RealityKit shadows, no SwiftUI shadows over the 3D view, coarse vs fine guide
+  state, haptic triggers isolated, model cache + preload, cached Apple voice lookup, turntable in RealityKit,
+  HeadTracker no longer spams observers, room polygons precomputed, AppModel singleton.
+- GPS removed → BLE beacon positioning (ranging, smoothing, trilateration, filter, debug screen).
+- Calibration screen at start (position + AirPods front + beacon offsets).
+- Map controlled only by you/AirPods (no drag/rotate/compass/tap-to-move); pinch zoom kept. FOV 60° → 75°.
+- Arrival pop-up removed (and the arrive-again loop fixed).
+- Listening mode: 4 coloured corners, spoken positions, strong haptics, tap + tap-again to confirm.
+- ElevenLabs voice picker with previews (+ premade voices when listing isn't allowed).
+- Login screen + demo login (test@test.test / test, sent to the backend, continues regardless).
+- "Back to the welcome screen" and "Log out" in Settings.
 
-**Verification:**
-- The first UI version compiled and ran on the owner's Mac.
-- The second round (review fixes + `GuideModel.announceDirection()`) was only syntax-checked. **Build it first (⌘B) and fix any compile errors** before anything else.
+**Round 2 (same evening):** non-scrolling calibration, AirPods pitch in Look view, more frequent / pitch-changing
+bloops with a "right way" chime, darker 3D map (dusk sky, dimmed lights) and dark 2D plan, sound stops when leaving
+the museum screens or backgrounding, listening-mode grid as VStack/HStack + one-sentence announcements (less lag),
+slower speech (`voice.speed`, default 0.88, ElevenLabs `voice_settings.speed` + Apple rate), Polish UI/TTS + language
+switch, default ElevenLabs voice = first account voice whose name contains "Makłowicz" (until the user picks one),
+ElevenLabs speech-to-text commands (listening mode chooser + "Mów" strip, map mode mic button, after arrival).
+
+**Verification:** round 1 built and ran on the owner's Mac. Round 2 is syntax-checked only: **build it (⌘B) first.**
+If looking up moves the Look view down, flip `HeadTracker.pitchSign` to -1.
 
 **Open ideas / not done yet:**
-- Dark-mode lighting for the 3D scene (currently it stays daytime on purpose).
-- Short pin titles in the overview: titles only show when zoomed in (< 90 m).
-- Pins can overlap the map controls on very small screens.
-- "Cheering" mascot when close to the target; a tap-Bloop-to-stop hint.
-- Real walking routes need the `ROUTE_API_URL` service; without it guidance is a straight line through walls.
+- Read `../backend` and `../embedded` to confirm the API paths and that the ESP32s advertise iBeacon frames
+  with major/minor (the app assumes that).
+- Pedestrian dead reckoning (CMPedometer steps + AirPods heading) between beacon fixes would smooth positions a lot.
+- Real walking routes need `ROUTE_API_URL`; without it guidance is a straight line through walls.
+- Background use (screen locked) stops ranging and head tracking; the app keeps the screen on instead.
 - Nothing has been committed to git since "Initial Commit". Commit when the build is green.
 
 ## 10. Working on this from a cloud Claude session
 
 - The Mac is reachable through the device tools when the desktop app is linked. The connected folder is
   `/Users/stanislawsikora/BEST hacks 2026/mobile` (mounted as `$HOME/mnt/mobile` in the device shell, a Linux VM: no Xcode there).
-- **Moving files:**
-  - To bring a few files over: `device_stage_files`, one file at a time works best.
-  - To send files back: make a tarball, `SendUserFile` it, then `device_commit_files`, then untar in the device shell.
-- **Compiling:** Swift can't be compiled in the cloud. A syntax check is possible with tree-sitter-swift
-  (GitHub `alex-pinkus/tree-sitter-swift`, branch `with-generated-files`, plus the tree-sitter CLI from GitHub releases).
-  The real check is Xcode on the Mac. Xcode can only be granted "click" access through computer use, and it is usually full-screen on another Space, so ask the owner to press ⌘B / ⌘R.
+- **Moving files:** tar on the device into `mobile/backups/`, `device_stage_files` the one tarball, untar in the cloud.
+  Back: tar in the cloud into `/mnt/user-data/outputs/`, `device_commit_files` (stagedPath) into `mobile/backups/`,
+  untar into a scratch dir in the device shell and `cp` over (cp overwrites in place; rm/unlink need permission).
+- **Compiling:** Swift can't be compiled in the cloud. Syntax check: build tree-sitter (GitHub `tree-sitter/tree-sitter`
+  `lib/src/lib.c`) + `alex-pinkus/tree-sitter-swift` (branch `with-generated-files`) into a tiny C checker.
+  The real check is Xcode on the Mac (ask the owner to press ⌘B / ⌘R, or use computer use if granted).
