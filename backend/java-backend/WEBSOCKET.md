@@ -1,11 +1,12 @@
-# Aktualna pozycja użytkownika
+# Pozycja użytkownika i nawigacja
 
 Adres lokalny: `ws://localhost:8081/ws/position` (dostosuj port do backendu).
 To zwykły WebSocket z wiadomościami JSON, bez STOMP i SockJS.
 
 Najpierw zaloguj się przez `/api/auth/login`, zgodnie z `AUTH.md`.
 Połączenie używa istniejącego ciasteczka sesji. Identyfikator użytkownika
-pochodzi z sesji — klient wysyła wyłącznie współrzędne.
+pochodzi z sesji. Klient może przesyłać pozycję, wybierać cel i anulować nawigację.
+Pełny protokół prowadzenia opisano w `NAVIGATION.md`.
 
 ## Format wiadomości
 
@@ -16,20 +17,26 @@ pochodzi z sesji — klient wysyła wyłącznie współrzędne.
 `x` i `y` to skończone liczby w **metrach**, na jednym piętrze. Oba pola
 są wymagane. Ciągi tekstowe, `null`, inne pola i niepoprawny JSON są odrzucane.
 Pojedyncza wiadomość może mieć maksymalnie 1024 bajty.
-Współrzędne mogą być ujemne; po otrzymaniu mapy ustalimy początek układu,
-kierunki osi oraz dozwolone granice.
+Współrzędne mogą być ujemne: `x = X modelu`, `y = Z modelu`, w metrach.
+Obsługiwany jest również format `{"type":"position","x":1.2,"y":3.4}`.
 
-Jedna kratka mapy ma bok **0,2 m**. Przy początku układu na brzegu siatki
-indeks kolumny to `floor(x / 0.2)`, a wiersza `floor(y / 0.2)`.
-Środek kratki `(kolumna, wiersz)` ma współrzędne
-`((kolumna + 0.5) * 0.2, (wiersz + 0.5) * 0.2)`.
-To konwencja do integracji z przyszłym plikiem, jeszcze bez importu mapy.
+Jedna kratka mapy ma bok **0,2 m**, a narożnik siatki to `(-106.6, -68.2)`.
+Indeks kolumny to `floor((x + 106.6) / 0.2)`, a wiersza
+`floor((y + 68.2) / 0.2)`. Środek kratki to
+`(-106.6 + (kolumna + 0.5) * 0.2, -68.2 + (wiersz + 0.5) * 0.2)`.
+Lokalizację ARKit trzeba wcześniej dopasować do układu modelu.
 
 Potwierdzenie wraca tylko do nadawcy:
 
 ```json
 {"type":"position","x":1.2,"y":3.4,"receivedAt":"2026-10-10T14:00:00Z"}
 ```
+
+Przy aktywnym celu po potwierdzeniu pozycji przychodzi także wiadomość
+`type: "navigation"` z `nextWaypoint` — punktem przed następną zmianą kierunku.
+Wybór celu: `{"type":"destination","x":0.1,"y":-62.3}`.
+Anulowanie: `{"type":"cancel"}`. Punkty muszą należeć do dostępnej części mapy,
+aby nawigacja mogła wyznaczyć trasę.
 
 `receivedAt` to czas odbioru przez serwer w UTC, nie czas pomiaru lokalizacji.
 Błędna wiadomość zwraca `type: "error"` i `code: "INVALID_POSITION"`.

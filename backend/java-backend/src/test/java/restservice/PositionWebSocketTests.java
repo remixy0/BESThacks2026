@@ -87,6 +87,48 @@ class PositionWebSocketTests {
     }
 
     @Test
+    void navigatesToTargetThroughActualWebSocketAndCancels() throws Exception {
+        try (var client = loggedInClient("first@example.com")) {
+            var listener = new Messages();
+            var socket = connect(client, listener);
+            try {
+                send(socket, "{\"type\":\"destination\",\"x\":-0.5,\"y\":51.9}");
+                assertThat(json.readTree(listener.next()).get("status").asText()).isEqualTo("awaiting_position");
+                send(socket, "{\"type\":\"position\",\"x\":-0.5,\"y\":51.9}");
+                assertThat(json.readTree(listener.next()).get("type").asText()).isEqualTo("position");
+                assertThat(json.readTree(listener.next()).get("status").asText()).isEqualTo("arrived");
+
+                // North entrance approach from the actual map, with several obstacles on the way.
+                tools.jackson.databind.JsonNode data;
+                try (var input = new org.springframework.core.io.ClassPathResource(
+                        "maps/field-museum-main-level.grid.json").getInputStream()) {
+                    data = json.readTree(input);
+                }
+                var approach = data.get("pointsOfInterest").get(1).get("approach");
+                send(socket, "{\"type\":\"destination\",\"x\":" + approach.get("x") + ",\"y\":" + approach.get("y") + "}");
+                var guidance = json.readTree(listener.next());
+                assertThat(guidance.get("status").asText()).isEqualTo("navigating");
+                assertThat(guidance.get("nextWaypoint").isObject()).isTrue();
+                int updates = 0;
+                while (!guidance.get("status").asText().equals("arrived") && updates++ < 30) {
+                    var point = guidance.get("nextWaypoint");
+                    send(socket, "{\"x\":" + point.get("x") + ",\"y\":" + point.get("y") + "}");
+                    assertThat(json.readTree(listener.next()).get("type").asText()).isEqualTo("position");
+                    guidance = json.readTree(listener.next());
+                }
+                assertThat(guidance.get("status").asText()).isEqualTo("arrived");
+                send(socket, "{\"type\":\"destination\",\"x\":9999,\"y\":9999}");
+                assertThat(json.readTree(listener.next()).get("code").asText()).isEqualTo("DESTINATION_OUTSIDE_MAP");
+                send(socket, "{\"type\":\"cancel\"}");
+                assertThat(json.readTree(listener.next()).get("status").asText()).isEqualTo("cancelled");
+            } finally {
+                socket.sendClose(WebSocket.NORMAL_CLOSURE, "done").join();
+                listener.closed.get(5, TimeUnit.SECONDS);
+            }
+        }
+    }
+
+    @Test
     void rejectsUnauthenticatedHandshake() {
         try (var client = client()) {
             assertThatThrownBy(() -> connect(client, new Messages()))

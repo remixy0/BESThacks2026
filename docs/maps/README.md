@@ -87,8 +87,11 @@ są unikalnymi identyfikatorami pomieszczeń — nie należy traktować ich jako
 
 Plik `example-route.json` zawiera zweryfikowaną trasę testową od punktu startu
 zwiedzania do Tsavo Lions (154 m w siatce czterokierunkowej). To przykład danych,
-nie nowy endpoint. Backend nie wczytuje jeszcze mapy automatycznie ani nie
-wyznacza tras na podstawie aktualizacji WebSocketu.
+nie osobny endpoint. Backend wczytuje mapę przy starcie i obsługuje nawigację
+przez istniejący WebSocket. Protokół opisano w
+`backend/java-backend/NAVIGATION.md`. Algorytm szuka ścieżki po czterech
+sąsiadach, następnie usuwa zbędne punkty, sprawdzając przechodniość całych
+odcinków. Takie bezpieczne odcinki mogą mieć dowolny kąt względem siatki.
 
 ## Jak powstała mapa
 
