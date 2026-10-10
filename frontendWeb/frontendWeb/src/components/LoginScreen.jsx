@@ -98,10 +98,6 @@ export default function LoginScreen({ onLoginSuccess }) {
             Zaloguj
           </button>
         </form>
-
-        <div className="login-footer-hint">
-          <span>🔒 Bezpieczne logowanie do systemu dyspozytorskiego</span>
-        </div>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   ROOMS, 
   POINTS_OF_INTEREST, 
@@ -89,6 +89,19 @@ function getRoomFontSize(roomId) {
 }
 
 
+// Czyste oznaczenie tekstowe dla obiektów bez użycia emotek
+function getPoiLabel(poi) {
+  if (poi.kind === 'entrance') return 'WE';
+  if (poi.kind === 'exhibit') return 'EK';
+  const n = (poi.name || '').toLowerCase();
+  if (n.includes('restroom')) return 'WC';
+  if (n.includes('elevator')) return 'WIN';
+  if (n.includes('stairs')) return 'SCH';
+  if (n.includes('store')) return 'SKL';
+  if (n.includes('atm')) return 'ATM';
+  return 'POI';
+}
+
 export default function MuseumMap({
   visitors,
   obstacles = [],
@@ -102,38 +115,43 @@ export default function MuseumMap({
   selectedVisitorId,
   onSelectVisitor
 }) {
-  const [poiFilter, setPoiFilter] = useState('all'); // 'all' | 'exhibit' | 'amenity'
-
-  const filteredPois = POINTS_OF_INTEREST.filter(p => {
-    if (poiFilter === 'exhibit') return p.kind === 'exhibit';
-    if (poiFilter === 'amenity') return p.kind === 'amenity' || p.kind === 'entrance';
-    return true;
-  });
-
-  // Ustalenie aktywnego powodu przeszkody
+  // Ustalenie aktywnego powodu przeszkody (bez emotek)
   let activeReason = {
     name: 'Mokra podłoga',
-    icon: '🧹',
     color: '#f59e0b'
   };
 
   if (activeHazardType === 'custom' && customHazardText.trim()) {
     activeReason = {
       name: customHazardText.trim(),
-      icon: '🚧',
       color: '#38bdf8'
     };
   } else {
     const preset = DEFAULT_HAZARDS.find(h => h.id === activeHazardType) || DEFAULT_HAZARDS[0];
     activeReason = {
       name: preset.name,
-      icon: preset.icon,
       color: preset.color
     };
   }
 
   const svgRef = useRef(null);
+  const hazardPickerRef = useRef(null);
   const [drawingBox, setDrawingBox] = useState(null);
+  const [showHazardMenu, setShowHazardMenu] = useState(false);
+
+  // Zamykanie menu po kliknięciu poza obszarem wyboru
+  useEffect(() => {
+    if (!showHazardMenu) return;
+    const handleClickOutside = (e) => {
+      if (hazardPickerRef.current && !hazardPickerRef.current.contains(e.target)) {
+        setShowHazardMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showHazardMenu]);
 
   // Pobranie współrzędnych kursora w przestrzeni SVG (0..1066, 0..681)
   const getSvgCoordinates = (e) => {
@@ -251,93 +269,88 @@ export default function MuseumMap({
     <div className="map-wrapper">
       <div className="map-header-bar">
         <div>
-          <h3>📍 {MUSEUM_METADATA.name}</h3>
+          <h3>{MUSEUM_METADATA.name}</h3>
           <span className="map-subtitle">
-            {MUSEUM_METADATA.subtitle} • {POINTS_OF_INTEREST.length} obiektów (POI) • {DOORS.length} drzwi
+            {MUSEUM_METADATA.subtitle}
           </span>
         </div>
 
-        {/* Pasek wyboru aktywnego powodu przeszkody z opcją wpisania z klawiatury */}
-        <div className="hazard-picker-bar">
-          <span className="hazard-picker-label">Wstaw przeszkodę:</span>
-          <div className="hazard-chips-row">
-            {DEFAULT_HAZARDS.map(h => {
-              const isActive = activeHazardType === h.id;
-              return (
-                <button
-                  key={h.id}
-                  type="button"
-                  className={`hazard-chip ${isActive ? 'active' : ''}`}
-                  style={{
-                    borderColor: isActive ? h.color : 'transparent',
-                    backgroundColor: isActive ? `${h.color}35` : 'rgba(255,255,255,0.05)',
-                    color: isActive ? '#ffffff' : '#94a3b8'
-                  }}
-                  onClick={() => {
-                    if (onSelectHazardType) onSelectHazardType(h.id);
-                    if (onChangeCustomHazardText) onChangeCustomHazardText('');
-                  }}
-                  title={`Wybierz powód: ${h.name}`}
-                >
-                  <span>{h.icon}</span> {h.name}
-                </button>
-              );
-            })}
+        {/* Przycisk z plusikiem po prawej stronie okna mapy rozwijający opcje przeszkód */}
+        <div className="hazard-picker-container" ref={hazardPickerRef}>
+          <button
+            type="button"
+            className={`btn-add-obstacle-toggle ${showHazardMenu ? 'active' : ''}`}
+            onClick={() => setShowHazardMenu(prev => !prev)}
+            title="Wstaw przeszkodę — kliknij, aby wybrać typ przeszkody"
+          >
+            <span className="plus-icon">+</span>
+            <span>Wstaw przeszkodę</span>
+          </button>
 
-            {/* Dynamiczne pole tekstowe na bieżący własny powód z klawiatury */}
-            <div className="custom-hazard-box">
-              <input
-                type="text"
-                className={`input-custom-hazard ${activeHazardType === 'custom' && customHazardText ? 'active' : ''}`}
-                placeholder="✏️ Wpisz inny powód..."
-                value={customHazardText}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (onChangeCustomHazardText) onChangeCustomHazardText(val);
-                  if (onSelectHazardType) {
-                    if (val.trim()) {
-                      onSelectHazardType('custom');
-                    } else {
-                      onSelectHazardType('wet_floor');
-                    }
-                  }
-                }}
-                onFocus={() => {
-                  if (customHazardText.trim() && onSelectHazardType) {
-                    onSelectHazardType('custom');
-                  }
-                }}
-              />
+          {showHazardMenu && (
+            <div className="hazard-dropdown-menu">
+              <div className="hazard-dropdown-header">Wybierz typ przeszkody:</div>
+              <div className="hazard-chips-column">
+                {DEFAULT_HAZARDS.map(h => {
+                  const isActive = activeHazardType === h.id;
+                  return (
+                    <button
+                      key={h.id}
+                      type="button"
+                      className={`hazard-chip-dropdown ${isActive ? 'active' : ''}`}
+                      style={{
+                        borderColor: isActive ? h.color : 'transparent',
+                        backgroundColor: isActive ? `${h.color}30` : 'rgba(255,255,255,0.05)',
+                        color: isActive ? '#ffffff' : '#cbd5e1'
+                      }}
+                      onClick={() => {
+                        if (onSelectHazardType) onSelectHazardType(h.id);
+                        if (onChangeCustomHazardText) onChangeCustomHazardText('');
+                        setShowHazardMenu(false);
+                      }}
+                      title={`Wybierz powód: ${h.name}`}
+                    >
+                      <span className="hazard-dot" style={{ backgroundColor: h.color }} />
+                      <span>{h.name}</span>
+                    </button>
+                  );
+                })}
+
+                <div className="custom-hazard-box-dropdown">
+                  <input
+                    type="text"
+                    className={`input-custom-hazard ${activeHazardType === 'custom' && customHazardText ? 'active' : ''}`}
+                    placeholder="Wpisz inny powód..."
+                    value={customHazardText}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (onChangeCustomHazardText) onChangeCustomHazardText(val);
+                      if (onSelectHazardType) {
+                        if (val.trim()) {
+                          onSelectHazardType('custom');
+                        } else {
+                          onSelectHazardType('wet_floor');
+                        }
+                      }
+                    }}
+                    onFocus={() => {
+                      if (customHazardText.trim() && onSelectHazardType) {
+                        onSelectHazardType('custom');
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        setShowHazardMenu(false);
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="hazard-dropdown-hint">
+                Kliknij lub przeciągnij myszką po sali na mapie, aby wstawić prostokąt przeszkody.
+              </div>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Belka filtracji obiektów POI z pliku JSON */}
-      <div className="poi-filter-toolbar">
-        <span className="poi-filter-label">Widok obiektów ({POINTS_OF_INTEREST.length}):</span>
-        <div className="poi-filter-buttons">
-          <button
-            type="button"
-            className={`btn-poi-filter ${poiFilter === 'all' ? 'active' : ''}`}
-            onClick={() => setPoiFilter('all')}
-          >
-            Wszystkie ({POINTS_OF_INTEREST.length})
-          </button>
-          <button
-            type="button"
-            className={`btn-poi-filter ${poiFilter === 'exhibit' ? 'active' : ''}`}
-            onClick={() => setPoiFilter('exhibit')}
-          >
-            🦖 Eksponaty ({POINTS_OF_INTEREST.filter(p => p.kind === 'exhibit').length})
-          </button>
-          <button
-            type="button"
-            className={`btn-poi-filter ${poiFilter === 'amenity' ? 'active' : ''}`}
-            onClick={() => setPoiFilter('amenity')}
-          >
-            🚻 Udogodnienia ({POINTS_OF_INTEREST.filter(p => p.kind !== 'exhibit').length})
-          </button>
+          )}
         </div>
       </div>
 
@@ -446,7 +459,7 @@ export default function MuseumMap({
           {/* Rysowane PRZED napisami sal, aby ich nie zasłaniały!      */}
           {/* ======================================================== */}
           <g className="poi-layer" pointerEvents="none">
-            {filteredPois.map(poi => {
+            {POINTS_OF_INTEREST.map(poi => {
               const isExhibit = poi.kind === 'exhibit';
               const isEntrance = poi.kind === 'entrance';
               const boxSize = isExhibit ? 22 : 18;
@@ -473,15 +486,17 @@ export default function MuseumMap({
                     strokeWidth={isExhibit ? 1.5 : 1} 
                   />
 
-                  {/* Ikona obiektu wewnątrz kwadratu */}
+                  {/* Oznaczenie tekstowe obiektu wewnątrz kwadratu (bez emotek) */}
                   <text 
                     x="0" 
                     y="0.5" 
                     textAnchor="middle" 
                     dominantBaseline="central" 
-                    fontSize={isExhibit ? 12 : 9.5}
+                    fontSize={isExhibit ? 8.5 : 7.5}
+                    fill={isExhibit ? '#38bdf8' : isEntrance ? '#4ade80' : '#cbd5e1'}
+                    fontWeight="bold"
                   >
-                    {poi.icon}
+                    {getPoiLabel(poi)}
                   </text>
 
                   {/* Podpis tekstowy dla głównych eksponatów */}
@@ -554,15 +569,17 @@ export default function MuseumMap({
                     strokeDasharray="4 2"
                   />
 
-                  {/* Ikona w środku małego prostokąta */}
+                  {/* Znak ostrzegawczy w środku małego prostokąta */}
                   <text
                     x="0"
                     y="1"
                     textAnchor="middle"
                     dominantBaseline="central"
-                    fontSize="11"
+                    fontSize="10"
+                    fontWeight="bold"
+                    fill={obs.color}
                   >
-                    {obs.icon}
+                    !
                   </text>
 
                   {/* Podpis z nazwą przeszkody pod prostokątem */}
@@ -687,7 +704,7 @@ export default function MuseumMap({
                       <g transform={`translate(${nextWp.svgX}, ${nextWp.svgY})`}>
                         <circle cx="0" cy="0" r="16" fill="rgba(56, 189, 248, 0.2)" stroke="#38bdf8" strokeWidth="1.5" className="nav-pulse-ring" />
                         <circle cx="0" cy="0" r="8" fill="#0284c7" stroke="#ffffff" strokeWidth="2" />
-                        <text x="0" y="0.5" textAnchor="middle" dominantBaseline="central" fontSize="7" fill="#ffffff">🎯</text>
+                        <circle cx="0" cy="0" r="3" fill="#ffffff" />
                         {/* Plakietka z odległością w metrach */}
                         <g transform="translate(0, -18)">
                           <rect x="-48" y="-9" width="96" height="18" rx="4" fill="#0f172a" stroke="#38bdf8" strokeWidth="1.2" />
@@ -704,7 +721,7 @@ export default function MuseumMap({
                     <g transform={`translate(${dest.svgX}, ${dest.svgY})`}>
                       <circle cx="0" cy="0" r="16" fill="rgba(34, 197, 94, 0.2)" stroke="#22c55e" strokeWidth="2" />
                       <circle cx="0" cy="0" r="8" fill="#16a34a" stroke="#ffffff" strokeWidth="2" />
-                      <text x="0" y="0.5" textAnchor="middle" dominantBaseline="central" fontSize="8">🏁</text>
+                      <text x="0" y="0.5" textAnchor="middle" dominantBaseline="central" fontSize="6.5" fontWeight="bold" fill="#ffffff">CEL</text>
                       <g transform="translate(0, 19)">
                         <rect x="-45" y="-8" width="90" height="16" rx="4" fill="#0f172a" stroke="#22c55e" strokeWidth="1.2" />
                         <text x="0" y="1" textAnchor="middle" dominantBaseline="middle" fill="#22c55e" fontSize="7.5" fontWeight="bold">
@@ -794,9 +811,12 @@ export default function MuseumMap({
                     {vis.name.split(' ')[0]}
                   </text>
 
-                  {/* Alert w razie problemu u gościa */}
+                  {/* Alert w razie problemu u gościa (bez emotki) */}
                   {hasProblem && (
-                    <text x="7" y="-7" fontSize="12">⚠️</text>
+                    <g transform="translate(8, -8)">
+                      <circle cx="0" cy="0" r="5.5" fill="#ef4444" stroke="#ffffff" strokeWidth="1" />
+                      <text x="0" y="0.5" textAnchor="middle" dominantBaseline="central" fill="#ffffff" fontSize="7.5" fontWeight="bold">!</text>
+                    </g>
                   )}
                 </g>
               );
@@ -831,16 +851,18 @@ export default function MuseumMap({
                   strokeDasharray="5 3"
                 />
 
-                {/* Ikona w środku rysowanego prostokąta */}
+                {/* Znak ostrzegawczy w środku rysowanego prostokąta */}
                 {w >= 14 && h >= 14 && (
                   <text
                     x={minX + w / 2}
                     y={minY + h / 2}
                     textAnchor="middle"
                     dominantBaseline="central"
-                    fontSize={Math.min(18, Math.max(10, Math.min(w, h) - 4))}
+                    fill={activeReason.color}
+                    fontSize={Math.min(14, Math.max(9, Math.min(w, h) - 4))}
+                    fontWeight="bold"
                   >
-                    {activeReason.icon}
+                    !
                   </text>
                 )}
 

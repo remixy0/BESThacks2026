@@ -86,11 +86,11 @@ body {
   font-weight: 600;
 }
 
-.header-stats {
+.header-actions {
   display: flex;
-  gap: 15px;
-  font-size: 13px;
-  color: var(--text-muted);
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
 }
 
 .header-stats strong {
@@ -274,6 +274,7 @@ body {
   border: 1px solid #7f1d1d;
   padding: 10px;
   border-radius: 8px;
+  margin-top: auto;
 }
 
 .fire-button {
@@ -302,6 +303,66 @@ body {
   font-size: 11px;
   color: #fca5a5;
   text-align: center;
+}
+
+/* Karta potwierdzenia ewakuacji pożarowej */
+.fire-confirm-card {
+  background: rgba(220, 38, 38, 0.2);
+  border: 1px solid #ef4444;
+  border-radius: 6px;
+  padding: 10px;
+  text-align: center;
+  animation: pulseConfirm 0.2s ease-out;
+}
+
+@keyframes pulseConfirm {
+  from { transform: scale(0.97); opacity: 0.8; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.fire-confirm-title {
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #fca5a5;
+}
+
+.fire-confirm-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-confirm-fire-yes {
+  flex: 1;
+  background: #dc2626;
+  color: #ffffff;
+  border: none;
+  padding: 8px 10px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-confirm-fire-yes:hover {
+  background: #b91c1c;
+}
+
+.btn-confirm-fire-cancel {
+  background: #334155;
+  color: #f1f5f9;
+  border: 1px solid #475569;
+  padding: 8px 12px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-confirm-fire-cancel:hover {
+  background: #475569;
 }
 
 /* Górna belka gości z przyciskiem "+" */
@@ -381,10 +442,13 @@ body {
 }
 
 .empty-list {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--text-muted);
   text-align: center;
-  padding: 15px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
 }
 
 .visitor-card {
@@ -483,71 +547,146 @@ body {
   color: var(--warning) !important;
 }
 
-/* Pasek wyboru powodu blokady w nagłówku mapy */
-.hazard-picker-bar {
+/* Przycisk wstawiania przeszkody i rozwijane menu w nagłówku mapy */
+.hazard-picker-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-add-obstacle-toggle {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
-}
-
-.hazard-picker-label {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-.hazard-chips-row {
-  display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
-}
-
-.hazard-chip {
-  border: 1px solid transparent;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 11px;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 8px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
   transition: all 0.2s;
 }
 
-.hazard-chip:hover {
-  filter: brightness(1.2);
+.btn-add-obstacle-toggle:hover,
+.btn-add-obstacle-toggle.active {
+  background: rgba(59, 130, 246, 0.28);
+  border-color: #3b82f6;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.25);
 }
 
-.hazard-chip.active {
+.plus-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: #3b82f6;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.active-hazard-badge {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid;
   font-weight: 600;
 }
 
-.custom-hazard-box {
+/* Rozwijane menu opcji przeszkody */
+.hazard-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 12px;
+  width: 250px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
+  z-index: 100;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.input-custom-hazard {
-  background: #1e293b;
+.hazard-dropdown-header {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hazard-chips-column {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hazard-chip-dropdown {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 12px;
+  text-align: left;
+  transition: all 0.15s;
+}
+
+.hazard-chip-dropdown:hover {
+  filter: brightness(1.2);
+}
+
+.hazard-chip-dropdown.active {
+  font-weight: 600;
+}
+
+.hazard-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.custom-hazard-box-dropdown {
+  margin-top: 2px;
+}
+
+.custom-hazard-box-dropdown .input-custom-hazard {
+  width: 100%;
+  box-sizing: border-box;
+  background: #0f172a;
   border: 1px solid var(--border);
   color: #ffffff;
-  padding: 4px 8px;
+  padding: 7px 10px;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 11.5px;
   outline: none;
-  width: 160px;
   transition: all 0.2s;
 }
 
-.input-custom-hazard:focus {
+.custom-hazard-box-dropdown .input-custom-hazard:focus {
   border-color: #38bdf8;
   box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
 }
 
-.input-custom-hazard.active {
-  border-color: #38bdf8;
-  background: #0f2744;
-  font-weight: 600;
+.hazard-dropdown-hint {
+  font-size: 10.5px;
+  color: #64748b;
+  line-height: 1.35;
+  margin-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 6px;
 }
 
 .obstacle-group:hover rect:last-of-type {
@@ -566,11 +705,6 @@ body {
 .closures-header h4 {
   margin: 0;
   font-size: 13px;
-}
-
-.closures-sub {
-  font-size: 11px;
-  color: var(--text-muted);
 }
 
 /* Lista aktywnych wyłączeń */
@@ -1223,23 +1357,21 @@ body {
   background: rgba(56, 189, 248, 0.15);
   color: #38bdf8;
   border: 1px solid rgba(56, 189, 248, 0.35);
-  padding: 3px 8px;
-  border-radius: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
   font-size: 12px;
   font-weight: 600;
-  margin-left: 10px;
 }
 
 .btn-logout-header {
   background: rgba(239, 68, 68, 0.15);
   color: #fca5a5;
   border: 1px solid rgba(239, 68, 68, 0.35);
-  padding: 3px 9px;
-  border-radius: 4px;
+  padding: 4px 11px;
+  border-radius: 6px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  margin-left: 8px;
   transition: background 0.15s, color 0.15s;
 }
 

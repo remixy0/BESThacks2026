@@ -74,9 +74,9 @@ function App() {
       }));
 
       if (guidance.status === 'arrived') {
-        showToast('🏁 Gość dotarł do celu!');
+        showToast('Gość dotarł do celu!');
       } else if (guidance.status === 'blocked') {
-        showToast(`⚠️ Trasa zablokowana: ${guidance.reason || 'Brak ścieżki'}`);
+        showToast(`Trasa zablokowana: ${guidance.reason || 'Brak ścieżki'}`);
       }
     });
 
@@ -127,13 +127,11 @@ function App() {
         return [newVisitor, ...prev];
       });
 
-      showToast(`📍 Backend przesłał pozycję: (${worldX}m, ${worldY}m w sali ${room.name})`);
+      showToast(`Backend przesłał pozycję: (${worldX}m, ${worldY}m w sali ${room.name})`);
     });
 
-    const unsubObsAck = backendClient.on('obstacleAck', (ack) => {
-      if (ack && ack.message) {
-        showToast(`✅ Backend potwierdził wyłączenie strefy: ${ack.message}`);
-      }
+    const unsubObsAck = backendClient.on('obstacleAck', () => {
+      // Potwierdzenie z backendu bez powiadomienia na ekranie
     });
 
     const unsubStatus = backendClient.on('status', (st) => {
@@ -182,17 +180,17 @@ function App() {
   // Wstawianie małego prostokąta przeszkody w narysowanym miejscu sali
   const handleAddObstacle = (obstacleData) => {
     let reason = 'Mokra podłoga';
-    let icon = '🧹';
+    let icon = '';
     let color = '#f59e0b';
 
     if (activeHazardType === 'custom' && customHazardText.trim()) {
       reason = customHazardText.trim();
-      icon = '🚧';
+      icon = '';
       color = '#38bdf8';
     } else {
       const preset = DEFAULT_HAZARDS.find(h => h.id === activeHazardType) || DEFAULT_HAZARDS[0];
       reason = preset.name;
-      icon = preset.icon;
+      icon = '';
       color = preset.color;
     }
 
@@ -226,8 +224,6 @@ function App() {
 
     // NATYCHMIAST PRZESYŁAMY DOKŁADNE DANE STREFY WYŁĄCZONEJ DO BACKENDU!
     backendClient.sendObstacle(newObs);
-
-    showToast(`🚨 Przesłano strefę wyłączoną do backendu: ${reason} (${widthM}m × ${heightM}m w ${obstacleData.roomName})`);
   };
 
   // Usunięcie przeszkody (otwarcie strefy)
@@ -235,7 +231,7 @@ function App() {
     setObstacles(prev => prev.filter(o => o.id !== id));
     // Informujemy backend o otwarciu obszaru:
     backendClient.sendRemoveObstacle(id);
-    showToast('Usunięto strefę — obszar odblokowany w backendzie.');
+    showToast('Usunięto strefę — obszar odblokowany.');
   };
 
   // Włączenie / wyłączenie alarmu pożarowego (Sygnał do backendu – to serwer kieruje gości)
@@ -244,7 +240,7 @@ function App() {
       setIsFireActive(true);
       // Wysyłamy sygnał do backendu – to backend wyznacza trasy ewakuacji dla gości!
       backendClient.sendFireAlarm(true);
-      showToast('🔥 Sygnał alarmu pożarowego wysłany do backendu! Serwer kieruje gości do wyjść.');
+      showToast('Sygnał alarmu pożarowego wysłany do backendu! Serwer kieruje gości do wyjść.');
 
       // Komunikat głosowy
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -272,7 +268,6 @@ function App() {
         onLoginSuccess={(user) => {
           setIsLoggedIn(true);
           setLoggedInUser(user);
-          showToast(`Zalogowano pomyślnie jako: ${user}`);
         }}
       />
     );
@@ -287,13 +282,15 @@ function App() {
         </div>
       )}
 
-      {/* Górny pasek z panelem stanu backendu */}
+      {/* Górny pasek */}
       <header className="main-header">
         <div className="header-brand">
-          <h1>🏛️ Field Museum (Main Level) — Panel Obsługi</h1>
-          <span className="badge-admin">Widok Administratora</span>
+          <h1>Admin Panel</h1>
+        </div>
+
+        <div className="header-actions">
           {loggedInUser && (
-            <span className="badge-user-logged">👤 {loggedInUser}</span>
+            <span className="badge-user-logged">{loggedInUser}</span>
           )}
           <button
             type="button"
@@ -304,36 +301,8 @@ function App() {
             }}
             title="Wyloguj się z panelu administratora"
           >
-            🔒 Wyloguj
+            Wyloguj
           </button>
-        </div>
-
-        <div className="header-stats">
-          {/* Wskaźnik stanu WebSocket backendu */}
-          <div
-            className={`backend-status-pill ${backendStatus}`}
-            onClick={() => setShowWsConsole(true)}
-            title="Kliknij, aby otworzyć konsolę i podgląd ramek JSON WebSocket"
-          >
-            <span className="status-dot"></span>
-            {backendStatus === 'connected' && '🟢 Backend: Połączony (ws)'}
-            {backendStatus === 'simulated' && '🟡 Backend: Tryb symulacji (100% zgodny z ws://:8081)'}
-            {backendStatus === 'connecting' && '🔄 Łączenie z backendem...'}
-            {backendStatus === 'disconnected' && '⚪ Backend: Rozłączony'}
-          </div>
-
-          <button
-            type="button"
-            className="btn-ws-console-toggle"
-            onClick={() => setShowWsConsole(true)}
-            title="Otwórz konsolę zapytań WebSocket"
-          >
-            📡 Konsola backendu
-          </button>
-
-          <span>Goście: <strong>{visitors.length}</strong></span>
-          <span>Problemy: <strong className={visitors.some(v => v.problem) ? 'text-red' : ''}>{visitors.filter(v => v.problem).length}</strong></span>
-          <span>Przeszkody: <strong className={obstacles.length > 0 ? 'text-warning' : ''}>{obstacles.length}</strong></span>
         </div>
       </header>
 
@@ -342,13 +311,14 @@ function App() {
         <div className="ws-modal-backdrop" onClick={() => setShowWsConsole(false)}>
           <div className="ws-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="ws-modal-header">
-              <h3>📡 Konsola komunikacji z backendem (WebSocket)</h3>
+              <h3>Konsola komunikacji z backendem (WebSocket)</h3>
               <button
                 type="button"
                 className="btn-close-modal"
                 onClick={() => setShowWsConsole(false)}
+                aria-label="Zamknij"
               >
-                ✕
+                &times;
               </button>
             </div>
 
@@ -382,22 +352,22 @@ function App() {
                   className="btn-test-action"
                   onClick={() => {
                     backendClient.simulateIncomingPosition(-0.5, 42.0, 'Anna (Telefon iOS)');
-                    showToast('📲 Symulacja: Backend przysłał aktualizację pozycji Anny (-0.5m, 42.0m)');
+                    showToast('Symulacja: Backend przysłał aktualizację pozycji Anny (-0.5m, 42.0m)');
                   }}
                   title="Symuluje nadejście pozycji z backendu w czasie rzeczywistym"
                 >
-                  📲 Symuluj: Backend przesyła ruch Anny (-0.5m, 42.0m)
+                  Symuluj: Backend przesyła ruch Anny (-0.5m, 42.0m)
                 </button>
                 <button
                   type="button"
                   className="btn-test-action"
                   onClick={() => {
                     backendClient.simulateIncomingPosition(-58.0, 7.5, 'Jan (Czujnik UWB)');
-                    showToast('📲 Symulacja: Backend przysłał nową osobę Jana w sali Africa (-58.0m, 7.5m)');
+                    showToast('Symulacja: Backend przysłał nową osobę Jana w sali Africa (-58.0m, 7.5m)');
                   }}
                   title="Symuluje zgłoszenie nowej osoby przez backend"
                 >
-                  📲 Symuluj: Backend przesyła Jana w Africa (-58.0m, 7.5m)
+                  Symuluj: Backend przesyła Jana w Africa (-58.0m, 7.5m)
                 </button>
               </div>
 
@@ -421,7 +391,7 @@ function App() {
 
             <div className="ws-modal-footer">
               <span className="ws-footer-hint">
-                💡 Zgodne w 100% z <code>WEBSOCKET.md</code> i <code>NAVIGATION.md</code> w repozytorium backendu.
+                Zgodne w 100% z <code>WEBSOCKET.md</code> i <code>NAVIGATION.md</code> w repozytorium backendu.
               </span>
               <button
                 type="button"
