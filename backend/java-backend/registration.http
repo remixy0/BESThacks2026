@@ -1,0 +1,17 @@
+### Utworzenie konta (IntelliJ HTTP Client)
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "TestoweHaslo123!"
+}
+
+### Powtórzenie tego żądania powinno zwrócić 409 Conflict
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "TEST@example.com",
+  "password": "TestoweHaslo123!"
+}
