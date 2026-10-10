@@ -1,8 +1,5 @@
 package restservice.position;
 
-import jakarta.servlet.http.HttpSession;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.*;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
@@ -15,11 +12,13 @@ import restservice.navigation.NavigationService;
 
 @Component
 public class PositionWebSocketHandler extends TextWebSocketHandler {
+    private final SocketHub hub;
     private final ObjectMapper json;
     private final PositionStore positions;
     private final NavigationService navigation;
 
-    public PositionWebSocketHandler(ObjectMapper json, PositionStore positions, NavigationService navigation) {
+    public PositionWebSocketHandler(ObjectMapper json, PositionStore positions, NavigationService navigation, SocketHub hub) {
+        this.hub = hub;
         this.json = json;
         this.positions = positions;
         this.navigation = navigation;
@@ -28,15 +27,21 @@ public class PositionWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         session.setTextMessageSizeLimit(1024);
-        if (!isAuthenticated(session)) {
+        if (!SocketAuthentication.isAuthenticated(session)) {
             session.close(CloseStatus.POLICY_VIOLATION);
-        }
+        } else { hub.addUser(session); }
     }
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+        synchronized (navigation) {
+            process(session, message);
+        }
+    }
+
+    private void process(WebSocketSession session, TextMessage message) throws Exception {
         // A WebSocket can outlive its HTTP session: re-check before each update.
-        if (!isAuthenticated(session)) {
+        if (!SocketAuthentication.isAuthenticated(session)) {
             positions.remove(session.getId());
             navigation.remove(session.getId());
             session.close(new CloseStatus(1008, "Session expired; log in again"));
@@ -89,45 +94,28 @@ public class PositionWebSocketHandler extends TextWebSocketHandler {
         send(session, new PositionAccepted("position", x, y, position.receivedAt().toString()));
         var guidance = navigation.position(session.getId(), new MapPoint(x, y));
         if (guidance != null) send(session, guidance);
+        hub.positionsChanged();
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
-        positions.remove(session.getId());
-        navigation.remove(session.getId());
+        hub.removeUser(session.getId());
     }
 
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
-        positions.remove(session.getId());
-        navigation.remove(session.getId());
+        hub.removeUser(session.getId());
         if (session.isOpen()) {
             session.close(CloseStatus.SERVER_ERROR);
         }
     }
 
-    private boolean isAuthenticated(WebSocketSession session) {
-        if (session.getPrincipal() == null) return false;
-        var httpSession = (HttpSession) session.getAttributes().get(PositionHandshakeInterceptor.HTTP_SESSION);
-        if (httpSession == null) return false;
-        try {
-            var stored = httpSession.getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
-            if (!(stored instanceof SecurityContext context)) return false;
-            var authentication = context.getAuthentication();
-            return authentication != null && authentication.isAuthenticated()
-                    && authentication.getName().equals(session.getPrincipal().getName());
-        } catch (IllegalStateException expiredSession) {
-            return false;
-        }
-    }
-
     private void invalidPosition(WebSocketSession session) throws IOException {
-        session.sendMessage(new TextMessage(json.writeValueAsString(
-                new PositionError("error", "INVALID_POSITION", "Wyślij obiekt JSON z dwiema skończonymi liczbami x i y w metrach."))));
+        send(session, new PositionError("error", "INVALID_POSITION", "Wyślij skończone współrzędne x i y w metrach."));
     }
 
     private void send(WebSocketSession session, Object message) throws IOException {
-        session.sendMessage(new TextMessage(json.writeValueAsString(message)));
+        hub.sendUser(session.getId(), message);
     }
 
     private record PositionAccepted(String type, double x, double y, String receivedAt) {}

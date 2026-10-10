@@ -40,12 +40,22 @@ class RegistrationTests {
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("id").isNumber())
+                .andExpect(jsonPath("role").value("USER"))
                 .andExpect(jsonPath("email").value("test@example.com"))
                 .andExpect(jsonPath("password").doesNotExist())
                 .andExpect(jsonPath("passwordHash").doesNotExist());
         var user = users.findByEmail("test@example.com").orElseThrow();
         assertThat(user.getPasswordHash()).isNotEqualTo("TestoweHaslo123!");
         assertThat(passwordEncoder.matches("TestoweHaslo123!", user.getPasswordHash())).isTrue();
+    }
+
+    @Test
+    void publicRegistrationCannotGrantAdminRole() throws Exception {
+        var result = mvc.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"test@example.com\",\"password\":\"TestoweHaslo123!\",\"role\":\"ADMIN\"}"))
+                .andReturn();
+        assertThat(result.getResponse().getStatus()).isIn(201,400);
+        users.findByEmail("test@example.com").ifPresent(user -> assertThat(user.getRole()).isEqualTo(restservice.user.Role.USER));
     }
 
     @Test

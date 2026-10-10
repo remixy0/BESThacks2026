@@ -20,6 +20,10 @@ public class AppUser {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16)
+    private Role role = Role.USER;
+
     protected AppUser() {}
 
     public AppUser(String email, String passwordHash) {
@@ -31,4 +35,6 @@ public class AppUser {
     public Long getId() { return id; }
     public String getEmail() { return email; }
     public String getPasswordHash() { return passwordHash; }
+    public Role getRole() { return role; }
+    public void setRole(Role role) { this.role = java.util.Objects.requireNonNull(role); }
 }

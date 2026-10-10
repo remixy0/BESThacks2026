@@ -49,6 +49,6 @@ public class LoginService {
         var user = users.findByEmail(authentication.getName())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED,
                         "Użytkownik nie istnieje."));
-        return new UserResponse(user.getId(), user.getEmail());
+        return new UserResponse(user.getId(), user.getEmail(), user.getRole());
     }
 }

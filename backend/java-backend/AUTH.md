@@ -54,3 +54,6 @@ token CSRF po logowaniu, zgodnie z mechanizmami
 [Spring Security](https://docs.spring.io/spring-security/reference/servlet/authentication/session-management.html).
 
 Testy używają osobnej bazy H2 i nie zmieniają danych PostgreSQL.
+
+
+Role USER/ADMIN, WebSocket administratora, alarm i dynamiczne strefy: [ADMIN.md](ADMIN.md).

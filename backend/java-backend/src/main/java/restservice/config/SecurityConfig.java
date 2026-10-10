@@ -36,7 +36,7 @@ public class SecurityConfig {
             var user = users.findByEmail(email)
                     .orElseThrow(() -> new UsernameNotFoundException("Niepoprawne dane logowania."));
             return User.withUsername(user.getEmail()).password(user.getPasswordHash())
-                    .roles("USER").build();
+                    .roles(user.getRole().name()).build();
         };
     }
 
@@ -86,6 +86,7 @@ public class SecurityConfig {
                                 "/v3/api-docs", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
                         .requestMatchers(HttpMethod.GET, "/ws/position").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/ws/admin").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
                         .anyRequest().denyAll())
                 .build();

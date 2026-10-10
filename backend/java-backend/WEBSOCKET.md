@@ -85,3 +85,6 @@ Powiązanie z użytkownikiem i kontrola originu korzystają z mechanizmów
 
 Testy otwierają prawdziwe połączenia HTTP i WebSocket na losowym porcie,
 używając oddzielnej bazy H2.
+
+
+Role USER/ADMIN, WebSocket administratora, alarm i dynamiczne strefy: [ADMIN.md](ADMIN.md).

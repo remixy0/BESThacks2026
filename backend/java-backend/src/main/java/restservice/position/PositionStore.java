@@ -22,6 +22,13 @@ public class PositionStore {
                 .max(Comparator.comparing(Position::receivedAt));
     }
 
+    public java.util.List<Position> snapshot() {
+        var latest = new java.util.TreeMap<String, Position>();
+        positions.values().forEach(p -> latest.merge(p.username(), p,
+                (a,b) -> a.receivedAt().isAfter(b.receivedAt()) ? a : b));
+        return java.util.List.copyOf(latest.values());
+    }
+
     public void remove(String connectionId) {
         positions.remove(connectionId);
     }

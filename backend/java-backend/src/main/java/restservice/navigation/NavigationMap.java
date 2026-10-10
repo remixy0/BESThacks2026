@@ -15,6 +15,7 @@ public class NavigationMap {
     private final double originX, originY, cellSize;
     private final int width, height;
     private final List<String> rows;
+    private List<MapPoint> exits = List.of();
 
     @Autowired
     public NavigationMap(ObjectMapper json) throws IOException {
@@ -29,6 +30,13 @@ public class NavigationMap {
             var loaded = new ArrayList<String>();
             for (var row : data.get("cells")) loaded.add(row.asText());
             rows = List.copyOf(loaded);
+            var loadedExits = new ArrayList<MapPoint>();
+            for (var poi : data.get("pointsOfInterest")) {
+                var approach = poi.get("approach");
+                if ("entrance".equals(poi.path("kind").asText()) && approach != null && !approach.isNull())
+                    loadedExits.add(new MapPoint(approach.get("x").doubleValue(), approach.get("y").doubleValue()));
+            }
+            exits = List.copyOf(loadedExits);
             validate();
         }
     }
@@ -43,6 +51,15 @@ public class NavigationMap {
         width = rows.isEmpty() ? 0 : rows.getFirst().length();
         validate();
     }
+
+    protected NavigationMap(NavigationMap source) {
+        id = source.id; originX = source.originX; originY = source.originY;
+        cellSize = source.cellSize; width = source.width; height = source.height;
+        rows = source.rows; exits = source.exits;
+    }
+
+    public List<MapPoint> exits() { return exits; }
+    public boolean canStep(int c, int r, int nc, int nr) { return walkable(nc, nr); }
 
     private void validate() {
         if (width <= 0 || height <= 0 || rows.size() != height || cellSize <= 0

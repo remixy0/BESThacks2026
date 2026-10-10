@@ -30,6 +30,6 @@ public class RegistrationService {
         }
         AppUser user = users.saveAndFlush(new AppUser(
                 request.email(), passwordEncoder.encode(request.password())));
-        return new UserResponse(user.getId(), user.getEmail());
+        return new UserResponse(user.getId(), user.getEmail(), user.getRole());
     }
 }

@@ -33,7 +33,7 @@ public class Pathfinder {
             for (int direction = 0; direction < 4; direction++) {
                 int nc = c + (direction == 0 ? -1 : direction == 1 ? 1 : 0);
                 int nr = r + (direction == 2 ? -1 : direction == 3 ? 1 : 0);
-                if (!map.walkable(nc, nr)) continue;
+                if (!map.canStep(c, r, nc, nr)) continue;
                 int next = nr * width + nc, candidate = node.cost() + 1;
                 if (candidate < cost[next]) {
                     cost[next] = candidate;
@@ -43,6 +43,32 @@ public class Pathfinder {
             }
         }
         throw new NavigationException("NO_ROUTE", "Brak dostępnej trasy do celu.");
+    }
+
+    public List<MapPoint> find(MapPoint start, MapPoint destination, NavigationMap view) {
+        return new Pathfinder(view).find(start, destination);
+    }
+
+    /** Breadth-first escape to the closest safe cell; directed edges forbid re-entry. */
+    public List<MapPoint> escape(MapPoint start, RestrictedMap view) {
+        map.requireWalkable(start, "POSITION");
+        int width = map.width(), size = width * map.height();
+        boolean[] seen = new boolean[size];
+        var queue = new ArrayDeque<Integer>();
+        int first = map.row(start) * width + map.column(start);
+        seen[first] = true; queue.add(first);
+        while (!queue.isEmpty()) {
+            int current = queue.remove(), c = current % width, r = current / width;
+            MapPoint point = map.center(c, r);
+            if (!view.excluded(point)) return find(start, point, view);
+            for (int[] d : new int[][]{{-1,0},{1,0},{0,-1},{0,1}}) {
+                int nc = c+d[0], nr = r+d[1];
+                if (!view.canStep(c,r,nc,nr)) continue;
+                int next = nr*width+nc;
+                if (!seen[next]) { seen[next] = true; queue.add(next); }
+            }
+        }
+        throw new NavigationException("NO_ESCAPE_ROUTE", "Brak dostępnego wyjścia ze strefy.");
     }
 
     private int heuristic(int a, int b, int width) {

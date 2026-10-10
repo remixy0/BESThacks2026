@@ -152,3 +152,6 @@ Algorytm wyznacza bezpieczną uproszczoną trasę. Nie gwarantuje globalnie
 najkrótszej trasy w ciągłej przestrzeni przy dowolnych kątach.
 Progi 0,4/0,3/0,75 m są stałymi w `NavigationService` i można je dostroić do
 dokładności lokalizacji telefonu.
+
+
+Role USER/ADMIN, WebSocket administratora, alarm i dynamiczne strefy: [ADMIN.md](ADMIN.md).

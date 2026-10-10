@@ -33,13 +33,18 @@ class PositionWebSocketTests {
     @Autowired PasswordEncoder encoder;
     @Autowired ObjectMapper json;
     @Autowired PositionStore positions;
+    @Autowired restservice.navigation.NavigationService navigation;
 
     @BeforeEach
     void createUsers() {
+        navigation.alarm(false);
+        for (var zone : navigation.policy().zones()) navigation.removeZone(zone.id());
         users.deleteAll();
         String hash = encoder.encode("TestoweHaslo123!");
         users.saveAndFlush(new AppUser("first@example.com", hash));
         users.saveAndFlush(new AppUser("second@example.com", hash));
+        var admin = new AppUser("admin@example.com", hash);
+        admin.setRole(restservice.user.Role.ADMIN); users.saveAndFlush(admin);
     }
 
     @Test
@@ -176,6 +181,81 @@ class PositionWebSocketTests {
         }
     }
 
+    @Test
+    void userCannotAccessAdminSocketOrSendAdminCommands() throws Exception {
+        try (var client = loggedInClient("first@example.com")) {
+            assertThatThrownBy(() -> adminConnect(client,new Messages()))
+                    .hasCauseInstanceOf(WebSocketHandshakeException.class)
+                    .satisfies(e -> assertThat(((WebSocketHandshakeException)e.getCause()).getResponse().statusCode()).isEqualTo(403));
+            var listener = new Messages(); var socket = connect(client,listener);
+            try {
+                send(socket,"{\"type\":\"alarm\",\"active\":true}");
+                assertThat(json.readTree(listener.next()).get("code").asText()).isEqualTo("UNSUPPORTED_MESSAGE");
+                assertThat(navigation.policy().alarmActive()).isFalse();
+            } finally { socket.sendClose(1000,"done").join(); listener.closed.get(5,TimeUnit.SECONDS); }
+        }
+    }
+
+    @Test
+    void adminReceivesPositionsAndPushesAlarmAndZoneUpdatesImmediately() throws Exception {
+        try (var admin = loggedInClient("admin@example.com"); var user = loggedInClient("first@example.com")) {
+            var adminMessages = new Messages(); var userMessages = new Messages();
+            var adminSocket = adminConnect(admin,adminMessages); var userSocket = connect(user,userMessages);
+            try {
+                assertThat(json.readTree(adminMessages.next()).get("type").asText()).isEqualTo("policy");
+                assertThat(json.readTree(adminMessages.next()).get("users").size()).isZero();
+                send(userSocket,"{\"x\":-0.5,\"y\":51.9}"); userMessages.next();
+                var locations = json.readTree(adminMessages.next());
+                assertThat(locations.get("users").get(0).get("username").asText()).isEqualTo("first@example.com");
+                assertThat(locations.get("users").get(0).get("x").doubleValue()).isEqualTo(-.5);
+                send(adminSocket,"{\"type\":\"alarm\",\"active\":true}");
+                assertThat(json.readTree(adminMessages.next()).get("alarmActive").booleanValue()).isTrue();
+                assertThat(json.readTree(userMessages.next()).get("type").asText()).isEqualTo("policy");
+                assertThat(json.readTree(userMessages.next()).get("alarmActive").booleanValue()).isTrue();
+                send(adminSocket,"{\"type\":\"zone.add\",\"minX\":10,\"minY\":10,\"maxX\":11,\"maxY\":11}");
+                var policy = json.readTree(adminMessages.next());
+                String id = policy.get("zones").get(0).get("id").asText();
+                assertThat(json.readTree(userMessages.next()).get("zones").size()).isEqualTo(1);
+                assertThat(json.readTree(userMessages.next()).get("type").asText()).isEqualTo("navigation");
+                send(adminSocket,"{\"type\":\"zone.remove\",\"id\":\""+id+"\"}");
+                assertThat(json.readTree(adminMessages.next()).get("zones").size()).isZero();
+                userMessages.next(); userMessages.next();
+                send(adminSocket,"{\"type\":\"alarm\",\"active\":false}");
+                assertThat(json.readTree(adminMessages.next()).get("alarmActive").booleanValue()).isFalse();
+                userMessages.next();
+                assertThat(json.readTree(userMessages.next()).get("status").asText()).isEqualTo("idle");
+                userSocket.sendClose(1000,"done").join(); userMessages.closed.get(5,TimeUnit.SECONDS);
+                assertThat(json.readTree(adminMessages.next()).get("users").size()).isZero();
+            } finally {
+                userSocket.abort(); adminSocket.sendClose(1000,"done").join(); adminMessages.closed.get(5,TimeUnit.SECONDS);
+            }
+        }
+    }
+
+    @Test
+    void validatesAdminCommandsAndRevokesSocketOnLogout() throws Exception {
+        try (var admin = loggedInClient("admin@example.com")) {
+            var listener = new Messages(); var socket = adminConnect(admin,listener);
+            try {
+                listener.next(); listener.next();
+                for (String invalid : new String[]{"null","{}","{\"type\":\"alarm\",\"active\":\"true\"}",
+                        "{\"type\":\"zone.add\",\"minX\":0,\"minY\":0,\"maxX\":-1,\"maxY\":1}"}) {
+                    send(socket,invalid);
+                    assertThat(json.readTree(listener.next()).get("type").asText()).isEqualTo("error");
+                }
+                var response = admin.send(HttpRequest.newBuilder(httpUri("/api/auth/logout"))
+                        .header("X-CSRF-TOKEN",csrf(admin)).POST(HttpRequest.BodyPublishers.noBody()).build(),HttpResponse.BodyHandlers.ofString());
+                assertThat(response.statusCode()).isEqualTo(204);
+                assertThat(listener.closed.get(5,TimeUnit.SECONDS)).isEqualTo(1008);
+                assertThat(navigation.policy().alarmActive()).isFalse();
+            } finally { socket.abort(); }
+        }
+    }
+
+    private WebSocket adminConnect(HttpClient client, Messages listener) throws Exception {
+        return client.newWebSocketBuilder().buildAsync(URI.create("ws://localhost:"+port+"/ws/admin"),listener).get(5,TimeUnit.SECONDS);
+    }
+
     private HttpClient loggedInClient(String email) throws Exception {
         var client = client();
         var response = client.send(HttpRequest.newBuilder(httpUri("/api/auth/login"))
@@ -184,6 +264,8 @@ class PositionWebSocketTests {
                                 + "\",\"password\":\"TestoweHaslo123!\"}")).build(),
                 HttpResponse.BodyHandlers.ofString());
         assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(json.readTree(response.body()).get("role").asText())
+                .isEqualTo(email.equals("admin@example.com") ? "ADMIN" : "USER");
         return client;
     }
 
