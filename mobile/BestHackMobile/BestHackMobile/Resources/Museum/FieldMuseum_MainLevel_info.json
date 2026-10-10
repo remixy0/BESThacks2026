@@ -1,0 +1,3589 @@
+{
+ "rooms": [
+  {
+   "node": "africa",
+   "id": "africa",
+   "name": "Africa",
+   "theme": "africa",
+   "status": "open",
+   "area_m2": 1433.3,
+   "center": [
+    -67.84,
+    0.0,
+    6.7
+   ],
+   "outline": [
+    [
+     -30.72,
+     -5.81
+    ],
+    [
+     -30.91,
+     19.85
+    ],
+    [
+     -90.47,
+     19.87
+    ],
+    [
+     -90.48,
+     6.05
+    ],
+    [
+     -82.22,
+     6.04
+    ],
+    [
+     -82.23,
+     -5.79
+    ]
+   ]
+  },
+  {
+   "node": "Bird_Habitats",
+   "id": "Bird_Habitats",
+   "name": "Bird Habitats",
+   "theme": "birds",
+   "status": "open",
+   "area_m2": 355.0,
+   "center": [
+    -75.68,
+    0.0,
+    25.87
+   ],
+   "outline": [
+    [
+     -60.9,
+     19.86
+    ],
+    [
+     -60.9,
+     31.87
+    ],
+    [
+     -90.46,
+     31.88
+    ],
+    [
+     -90.47,
+     19.87
+    ]
+   ]
+  },
+  {
+   "node": "reptiles",
+   "id": "reptiles",
+   "name": "Reptiles",
+   "theme": "animals",
+   "status": "open",
+   "area_m2": 210.2,
+   "center": [
+    -52.15,
+    0.0,
+    25.86
+   ],
+   "outline": [
+    [
+     -60.9,
+     19.86
+    ],
+    [
+     -43.4,
+     19.85
+    ],
+    [
+     -43.39,
+     31.86
+    ],
+    [
+     -60.9,
+     31.87
+    ]
+   ]
+  },
+  {
+   "node": "animals",
+   "id": "animals",
+   "name": "What Is an Animal?",
+   "theme": "animals",
+   "status": "open",
+   "area_m2": 909.7,
+   "center": [
+    -60.67,
+    0.0,
+    39.51
+   ],
+   "outline": [
+    [
+     -90.46,
+     31.88
+    ],
+    [
+     -30.87,
+     31.86
+    ],
+    [
+     -30.9,
+     47.12
+    ],
+    [
+     -90.47,
+     47.16
+    ]
+   ]
+  },
+  {
+   "node": "mammals_4",
+   "id": "mammals",
+   "name": "Mammals of Africa",
+   "theme": "mammals",
+   "status": "open",
+   "area_m2": 1516.8,
+   "center": [
+    -98.03,
+    0.0,
+    0.29
+   ],
+   "outline": [
+    [
+     -90.46,
+     50.64
+    ],
+    [
+     -105.54,
+     50.63
+    ],
+    [
+     -105.59,
+     -50.07
+    ],
+    [
+     -90.54,
+     -50.06
+    ]
+   ]
+  },
+  {
+   "node": "mammals_5",
+   "id": "mammals",
+   "name": "Mammals of Africa",
+   "theme": "mammals",
+   "status": "open",
+   "area_m2": 813.6,
+   "center": [
+    -56.64,
+    0.0,
+    -13.95
+   ],
+   "outline": [
+    [
+     -90.51,
+     -19.37
+    ],
+    [
+     -40.93,
+     -19.4
+    ],
+    [
+     -30.57,
+     -19.41
+    ],
+    [
+     -30.72,
+     -5.81
+    ],
+    [
+     -90.5,
+     -5.78
+    ]
+   ]
+  },
+  {
+   "node": "rice",
+   "id": "rice",
+   "name": "Plant Medicine",
+   "theme": "nature",
+   "status": "closed",
+   "area_m2": 97.8,
+   "center": [
+    -86.36,
+    0.0,
+    0.13
+   ],
+   "outline": [
+    [
+     -82.23,
+     -5.79
+    ],
+    [
+     -82.22,
+     6.04
+    ],
+    [
+     -90.48,
+     6.05
+    ],
+    [
+     -90.5,
+     -5.78
+    ]
+   ]
+  },
+  {
+   "node": "birds",
+   "id": "birds",
+   "name": "Birds",
+   "theme": "birds",
+   "status": "open",
+   "area_m2": 941.4,
+   "center": [
+    -60.82,
+    0.0,
+    -39.4
+   ],
+   "outline": [
+    [
+     -31.11,
+     -47.34
+    ],
+    [
+     -31.1,
+     -31.46
+    ],
+    [
+     -90.52,
+     -31.5
+    ],
+    [
+     -90.53,
+     -47.31
+    ]
+   ]
+  },
+  {
+   "node": "nature_walk",
+   "id": "nature_walk",
+   "name": "Nature Walk",
+   "theme": "nature",
+   "status": "open",
+   "area_m2": 925.7,
+   "center": [
+    -39.52,
+    0.0,
+    -25.39
+   ],
+   "outline": [
+    [
+     -25.35,
+     -19.44
+    ],
+    [
+     -90.51,
+     -19.37
+    ],
+    [
+     -90.52,
+     -31.5
+    ],
+    [
+     -25.36,
+     -31.57
+    ],
+    [
+     -25.36,
+     -33.28
+    ],
+    [
+     -16.87,
+     -33.29
+    ],
+    [
+     -16.85,
+     -17.33
+    ],
+    [
+     -25.34,
+     -17.32
+    ]
+   ]
+  },
+  {
+   "node": "mastaba",
+   "id": "mastaba",
+   "name": "Inside Ancient Egypt",
+   "theme": "egypt",
+   "status": "closed",
+   "area_m2": 171.3,
+   "center": [
+    -22.05,
+    0.0,
+    25.89
+   ],
+   "outline": [
+    [
+     -26.47,
+     16.19
+    ],
+    [
+     -17.64,
+     16.19
+    ],
+    [
+     -17.63,
+     35.59
+    ],
+    [
+     -26.46,
+     35.59
+    ]
+   ]
+  },
+  {
+   "node": "sci_hub",
+   "id": "sci_hub",
+   "name": "Science Hub",
+   "theme": "white",
+   "status": "open",
+   "area_m2": 89.4,
+   "center": [
+    21.97,
+    0.0,
+    19.6
+   ],
+   "outline": [
+    [
+     26.72,
+     24.3
+    ],
+    [
+     17.21,
+     24.29
+    ],
+    [
+     17.22,
+     14.89
+    ],
+    [
+     26.74,
+     14.91
+    ]
+   ]
+  },
+  {
+   "node": "fm_store",
+   "id": "fm_store",
+   "name": "Museum Store",
+   "theme": "store",
+   "status": "open",
+   "area_m2": 528.3,
+   "center": [
+    47.77,
+    0.0,
+    39.39
+   ],
+   "outline": [
+    [
+     64.79,
+     31.65
+    ],
+    [
+     64.76,
+     47.18
+    ],
+    [
+     30.74,
+     47.12
+    ],
+    [
+     30.77,
+     31.6
+    ]
+   ]
+  },
+  {
+   "node": "founders",
+   "id": "founders",
+   "name": "Founders' Room",
+   "theme": "warm",
+   "status": "closed",
+   "area_m2": 152.6,
+   "center": [
+    22.42,
+    0.0,
+    56.44
+   ],
+   "outline": [
+    [
+     27.98,
+     47.12
+    ],
+    [
+     27.95,
+     61.11
+    ],
+    [
+     25.01,
+     61.15
+    ],
+    [
+     19.51,
+     61.05
+    ],
+    [
+     17.05,
+     61.06
+    ],
+    [
+     17.02,
+     47.15
+    ]
+   ]
+  },
+  {
+   "node": "pawnee_lodge",
+   "id": "pawnee_lodge",
+   "name": "Pawnee Earth Lodge",
+   "theme": "americas",
+   "status": "closed",
+   "area_m2": 297.2,
+   "center": [
+    79.19,
+    0.0,
+    13.15
+   ],
+   "outline": [
+    [
+     90.16,
+     19.93
+    ],
+    [
+     68.2,
+     19.9
+    ],
+    [
+     68.22,
+     6.37
+    ],
+    [
+     90.18,
+     6.4
+    ]
+   ]
+  },
+  {
+   "node": "field_bistro",
+   "id": "field_bistro",
+   "name": "Field Bistro",
+   "theme": "warm",
+   "status": "closed",
+   "area_m2": 366.2,
+   "center": [
+    20.48,
+    0.0,
+    -50.26
+   ],
+   "outline": [
+    [
+     26.45,
+     -26.5
+    ],
+    [
+     16.49,
+     -26.51
+    ],
+    [
+     16.53,
+     -46.13
+    ],
+    [
+     19.51,
+     -46.12
+    ],
+    [
+     19.52,
+     -54.7
+    ],
+    [
+     12.11,
+     -54.69
+    ],
+    [
+     12.03,
+     -61.0
+    ],
+    [
+     16.97,
+     -61.04
+    ],
+    [
+     19.49,
+     -61.04
+    ],
+    [
+     24.95,
+     -61.04
+    ],
+    [
+     27.82,
+     -61.02
+    ],
+    [
+     27.9,
+     -47.42
+    ],
+    [
+     26.49,
+     -46.11
+    ]
+   ]
+  },
+  {
+   "node": "Room",
+   "id": "Room",
+   "name": null,
+   "theme": "staff",
+   "status": "closed",
+   "area_m2": 116.0,
+   "center": [
+    34.85,
+    0.0,
+    -39.83
+   ],
+   "outline": [
+    [
+     38.68,
+     -47.4
+    ],
+    [
+     38.66,
+     -32.25
+    ],
+    [
+     31.01,
+     -32.26
+    ],
+    [
+     31.03,
+     -47.42
+    ]
+   ]
+  },
+  {
+   "node": "StaffOnly",
+   "id": "StaffOnly",
+   "name": null,
+   "theme": "staff",
+   "status": "staff_only",
+   "area_m2": 67.9,
+   "center": [
+    28.58,
+    0.0,
+    -41.1
+   ],
+   "outline": [
+    [
+     27.9,
+     -47.42
+    ],
+    [
+     31.03,
+     -47.42
+    ],
+    [
+     31.01,
+     -32.26
+    ],
+    [
+     26.46,
+     -32.27
+    ],
+    [
+     26.49,
+     -46.11
+    ]
+   ]
+  },
+  {
+   "node": "Room_2",
+   "id": "Room",
+   "name": null,
+   "theme": "staff",
+   "status": "closed",
+   "area_m2": 854.1,
+   "center": [
+    58.32,
+    0.0,
+    -12.76
+   ],
+   "outline": [
+    [
+     90.23,
+     -19.41
+    ],
+    [
+     90.21,
+     -6.02
+    ],
+    [
+     26.42,
+     -6.12
+    ],
+    [
+     26.44,
+     -19.51
+    ]
+   ]
+  },
+  {
+   "node": "Room_3",
+   "id": "Room",
+   "name": null,
+   "theme": "staff",
+   "status": "closed",
+   "area_m2": 128.8,
+   "center": [
+    21.62,
+    0.0,
+    -12.82
+   ],
+   "outline": [
+    [
+     26.44,
+     -19.51
+    ],
+    [
+     26.42,
+     -6.12
+    ],
+    [
+     16.79,
+     -6.14
+    ],
+    [
+     16.82,
+     -19.53
+    ]
+   ]
+  },
+  {
+   "node": "StaffOnly_2",
+   "id": "StaffOnly",
+   "name": null,
+   "theme": "staff",
+   "status": "staff_only",
+   "area_m2": 209.6,
+   "center": [
+    81.75,
+    0.0,
+    0.18
+   ],
+   "outline": [
+    [
+     90.21,
+     -6.02
+    ],
+    [
+     90.18,
+     6.4
+    ],
+    [
+     73.3,
+     6.38
+    ],
+    [
+     73.33,
+     -6.04
+    ]
+   ]
+  },
+  {
+   "node": "apsaalooke",
+   "id": "apsaalooke",
+   "name": "Apsáalooke Women and Warriors",
+   "theme": "apsaalooke",
+   "status": "open",
+   "area_m2": 880.1,
+   "center": [
+    53.89,
+    0.0,
+    6.63
+   ],
+   "outline": [
+    [
+     68.2,
+     19.9
+    ],
+    [
+     30.6,
+     19.84
+    ],
+    [
+     30.62,
+     6.31
+    ],
+    [
+     43.4,
+     6.33
+    ],
+    [
+     43.42,
+     -6.09
+    ],
+    [
+     73.33,
+     -6.04
+    ],
+    [
+     73.3,
+     6.38
+    ],
+    [
+     68.22,
+     6.37
+    ]
+   ]
+  },
+  {
+   "node": "americas",
+   "id": "americas",
+   "name": "Ancient Americas",
+   "theme": "americas",
+   "status": "open",
+   "area_m2": 3813.7,
+   "center": [
+    73.41,
+    0.0,
+    5.51
+   ],
+   "outline": [
+    [
+     85.92,
+     31.69
+    ],
+    [
+     36.67,
+     31.61
+    ],
+    [
+     36.69,
+     19.85
+    ],
+    [
+     90.16,
+     19.93
+    ],
+    [
+     90.23,
+     -19.41
+    ],
+    [
+     26.44,
+     -19.51
+    ],
+    [
+     26.46,
+     -32.27
+    ],
+    [
+     38.66,
+     -32.25
+    ],
+    [
+     38.68,
+     -47.4
+    ],
+    [
+     90.47,
+     -47.29
+    ],
+    [
+     90.44,
+     -50.19
+    ],
+    [
+     105.54,
+     -50.21
+    ],
+    [
+     105.58,
+     50.5
+    ],
+    [
+     90.53,
+     50.48
+    ],
+    [
+     90.51,
+     47.12
+    ],
+    [
+     85.9,
+     47.09
+    ],
+    [
+     85.96,
+     36.64
+    ],
+    [
+     89.95,
+     36.61
+    ],
+    [
+     90.01,
+     31.7
+    ]
+   ]
+  },
+  {
+   "node": "StaffOnly_3",
+   "id": "StaffOnly",
+   "name": null,
+   "theme": "staff",
+   "status": "staff_only",
+   "area_m2": 345.2,
+   "center": [
+    81.04,
+    0.0,
+    37.48
+   ],
+   "outline": [
+    [
+     85.92,
+     31.69
+    ],
+    [
+     90.01,
+     31.7
+    ],
+    [
+     89.95,
+     36.61
+    ],
+    [
+     85.96,
+     36.64
+    ],
+    [
+     85.9,
+     47.09
+    ],
+    [
+     64.76,
+     47.01
+    ],
+    [
+     64.79,
+     31.65
+    ]
+   ]
+  },
+  {
+   "node": "Room_4",
+   "id": "Room",
+   "name": null,
+   "theme": "staff",
+   "status": "closed",
+   "area_m2": 211.2,
+   "center": [
+    34.91,
+    0.0,
+    0.11
+   ],
+   "outline": [
+    [
+     43.4,
+     6.33
+    ],
+    [
+     26.4,
+     6.3
+    ],
+    [
+     26.42,
+     -6.12
+    ],
+    [
+     43.42,
+     -6.09
+    ]
+   ]
+  },
+  {
+   "node": "StaffOnly_4",
+   "id": "StaffOnly",
+   "name": null,
+   "theme": "staff",
+   "status": "staff_only",
+   "area_m2": 168.1,
+   "center": [
+    -22.3,
+    0.0,
+    55.95
+   ],
+   "outline": [
+    [
+     -27.71,
+     61.18
+    ],
+    [
+     -27.78,
+     45.57
+    ],
+    [
+     -17.0,
+     45.52
+    ],
+    [
+     -16.93,
+     61.13
+    ],
+    [
+     -19.36,
+     61.14
+    ],
+    [
+     -25.05,
+     61.15
+    ]
+   ]
+  },
+  {
+   "node": "StaffOnly_5",
+   "id": "StaffOnly",
+   "name": null,
+   "theme": "staff",
+   "status": "staff_only",
+   "area_m2": 203.3,
+   "center": [
+    -34.93,
+    0.0,
+    25.85
+   ],
+   "outline": [
+    [
+     -43.4,
+     19.85
+    ],
+    [
+     -26.47,
+     19.85
+    ],
+    [
+     -26.47,
+     31.86
+    ],
+    [
+     -43.39,
+     31.86
+    ]
+   ]
+  },
+  {
+   "node": "StaffOnly_6",
+   "id": "StaffOnly",
+   "name": null,
+   "theme": "staff",
+   "status": "staff_only",
+   "area_m2": 214.6,
+   "center": [
+    -19.52,
+    0.0,
+    -57.85
+   ],
+   "outline": [
+    [
+     -27.72,
+     -60.99
+    ],
+    [
+     -25.0,
+     -61.06
+    ],
+    [
+     -19.59,
+     -61.01
+    ],
+    [
+     -16.94,
+     -61.01
+    ],
+    [
+     -16.9,
+     -67.0
+    ],
+    [
+     -11.04,
+     -66.94
+    ],
+    [
+     -11.24,
+     -54.37
+    ],
+    [
+     -19.47,
+     -54.44
+    ],
+    [
+     -19.55,
+     -45.81
+    ],
+    [
+     -27.74,
+     -45.89
+    ]
+   ]
+  },
+  {
+   "node": "coat_check",
+   "id": "coat_check",
+   "name": "Coat Check",
+   "theme": "warm",
+   "status": "closed",
+   "area_m2": 89.7,
+   "center": [
+    19.09,
+    0.0,
+    30.91
+   ],
+   "outline": [
+    [
+     26.54,
+     27.92
+    ],
+    [
+     26.53,
+     33.94
+    ],
+    [
+     11.64,
+     33.91
+    ],
+    [
+     11.65,
+     27.89
+    ]
+   ]
+  },
+  {
+   "node": "Space",
+   "id": "Space",
+   "name": null,
+   "theme": "staff",
+   "status": "open",
+   "area_m2": 55.8,
+   "center": [
+    -25.66,
+    0.0,
+    -8.59
+   ],
+   "outline": [
+    [
+     -30.72,
+     -5.81
+    ],
+    [
+     -30.66,
+     -11.36
+    ],
+    [
+     -20.63,
+     -11.36
+    ],
+    [
+     -20.63,
+     -5.81
+    ]
+   ]
+  },
+  {
+   "node": "Slave_Ship",
+   "id": "Slave_Ship",
+   "name": "Africa",
+   "theme": "africa",
+   "status": "open",
+   "area_m2": 45.2,
+   "center": [
+    -42.8,
+    0.0,
+    18.07
+   ],
+   "outline": [
+    [
+     -36.46,
+     16.29
+    ],
+    [
+     -49.16,
+     16.3
+    ],
+    [
+     -49.14,
+     19.86
+    ],
+    [
+     -36.44,
+     19.85
+    ]
+   ]
+  }
+ ],
+ "exhibits": [
+  {
+   "key": "maximo",
+   "node": "Exhibits/Maximo",
+   "title": "Máximo the Titanosaur",
+   "gallery": "Stanley Field Hall",
+   "text": "A cast of the titanosaur Patagotitan mayorum, one of the largest animals known to have walked on land. About 37 metres (122 ft) long, it lived around 100 million years ago in what is now Patagonia, Argentina.",
+   "position": [
+    -3.0,
+    0.0,
+    -27.0
+   ],
+   "yaw_degrees": 90,
+   "detail_model": "Artifacts/Maximo.usdz",
+   "footprint_m": [
+    38.0,
+    8.0
+   ]
+  },
+  {
+   "key": "elephants",
+   "node": "Exhibits/FightingElephants",
+   "title": "Fighting African Elephants",
+   "gallery": "Stanley Field Hall",
+   "text": "Two African bush elephant bulls locked in combat, prepared by the naturalist and taxidermist Carl Akeley. They have been on display at the Field Museum since 1909.",
+   "position": [
+    -0.6,
+    0.0,
+    -1.0
+   ],
+   "yaw_degrees": 0,
+   "detail_model": "Artifacts/FightingElephants.usdz",
+   "footprint_m": [
+    9.2,
+    7.0
+   ]
+  },
+  {
+   "key": "totems",
+   "node": "Exhibits/TotemPoles",
+   "title": "Totem Poles",
+   "gallery": "Stanley Field Hall",
+   "text": "Carved red-cedar poles from the Northwest Coast of North America. The stacked figures - bear, raven, thunderbird, beaver and others - are crests that tell the histories of the families who raised them.",
+   "position": [
+    -0.6,
+    0.0,
+    17.0
+   ],
+   "yaw_degrees": 0,
+   "detail_model": "Artifacts/TotemPoles.usdz",
+   "footprint_m": [
+    7.0,
+    4.0
+   ]
+  },
+  {
+   "key": "tsavo_lions",
+   "node": "Exhibits/TsavoLions",
+   "title": "The Lions of Tsavo",
+   "gallery": "Mammals of Africa",
+   "text": "In 1898 two maneless male lions attacked workers building a railway bridge over the Tsavo River in Kenya. They were shot by John Henry Patterson and have been at the Field Museum since 1925.",
+   "position": [
+    -103.42,
+    0.0,
+    -1.36
+   ],
+   "yaw_degrees": 90,
+   "detail_model": "Artifacts/TsavoLions.usdz",
+   "footprint_m": [
+    5.3,
+    3.2
+   ]
+  },
+  {
+   "key": "seabirds",
+   "node": "Exhibits/Seabirds",
+   "title": "Plunge-Diving Seabirds",
+   "gallery": "Birds",
+   "text": "Northern gannets and blue-footed boobies fold back their wings and dive into the sea at high speed to catch fish. They nest in noisy colonies on rocky coasts and islands.",
+   "position": [
+    -60.82,
+    0.0,
+    -45.37
+   ],
+   "yaw_degrees": 0,
+   "detail_model": "Artifacts/Seabirds.usdz",
+   "footprint_m": [
+    4.7,
+    2.8
+   ]
+  },
+  {
+   "key": "mask",
+   "node": "Exhibits/GreenstoneMask",
+   "title": "Greenstone Mask",
+   "gallery": "Ancient Americas",
+   "text": "Stone face masks were made across ancient Mesoamerica, notably at Teotihuacan in central Mexico. Their eyes were often inlaid with shell and obsidian.",
+   "position": [
+    41.68,
+    0.0,
+    -22.94
+   ],
+   "yaw_degrees": 0,
+   "detail_model": "Artifacts/GreenstoneMask.usdz",
+   "footprint_m": [
+    1.6,
+    1.4
+   ]
+  },
+  {
+   "key": "pawnee_lodge",
+   "node": "Exhibits/PawneeEarthLodge",
+   "title": "Pawnee Earth Lodge",
+   "gallery": "Ancient Americas",
+   "text": "A full-size reconstruction of an earth lodge, the traditional home of the Pawnee people of the Great Plains. Walk inside to see the four central posts, the fire pit and the family sleeping platforms.",
+   "position": [
+    80.69,
+    0.0,
+    13.15
+   ],
+   "yaw_degrees": -90,
+   "detail_model": "Artifacts/PawneeEarthLodge.usdz",
+   "footprint_m": [
+    12.0,
+    16.0
+   ]
+  },
+  {
+   "key": "mastaba",
+   "node": "Exhibits/Mastaba",
+   "title": "Mastaba Tomb Chapel",
+   "gallery": "Inside Ancient Egypt",
+   "text": "A mastaba is a flat-topped ancient Egyptian tomb. Step through the doorway into the chapel corridor, where offerings were left for the person buried below. (Wall carvings shown here are decorative.)",
+   "position": [
+    -22.65,
+    0.0,
+    25.89
+   ],
+   "yaw_degrees": 90,
+   "detail_model": "Artifacts/Mastaba.usdz",
+   "footprint_m": [
+    9.4,
+    9.0
+   ]
+  }
+ ],
+ "displays": [
+  {
+   "kind": "diorama",
+   "room": "animals",
+   "theme": "animals",
+   "node": "Galleries/animals/Diorama_1",
+   "position": [
+    -32.14,
+    0.0,
+    43.79
+   ],
+   "yaw_degrees": -90.4
+  },
+  {
+   "kind": "diorama",
+   "room": "animals",
+   "theme": "animals",
+   "node": "Galleries/animals/Diorama_2",
+   "position": [
+    -32.07,
+    0.0,
+    34.26
+   ],
+   "yaw_degrees": -90.4
+  },
+  {
+   "kind": "diorama",
+   "room": "mammals_5",
+   "theme": "mammals",
+   "node": "Galleries/mammals_5/Diorama_1",
+   "position": [
+    -31.72,
+    0.0,
+    -13.69
+   ],
+   "yaw_degrees": -90.4
+  },
+  {
+   "kind": "diorama",
+   "room": "Bird_Habitats",
+   "theme": "birds",
+   "node": "Galleries/Bird_Habitats/Diorama_1",
+   "position": [
+    -88.14,
+    0.0,
+    20.93
+   ],
+   "yaw_degrees": 0.0
+  },
+  {
+   "kind": "diorama",
+   "room": "reptiles",
+   "theme": "animals",
+   "node": "Galleries/reptiles/Diorama_1",
+   "position": [
+    -54.44,
+    0.0,
+    20.91
+   ],
+   "yaw_degrees": 0.0
+  },
+  {
+   "kind": "diorama",
+   "room": "mammals_4",
+   "theme": "mammals",
+   "node": "Galleries/mammals_4/Diorama_1",
+   "position": [
+    -91.5,
+    0.0,
+    43.81
+   ],
+   "yaw_degrees": -89.9
+  },
+  {
+   "kind": "diorama",
+   "room": "mammals_4",
+   "theme": "mammals",
+   "node": "Galleries/mammals_4/Diorama_2",
+   "position": [
+    -91.5,
+    0.0,
+    39.56
+   ],
+   "yaw_degrees": -89.9
+  },
+  {
+   "kind": "diorama",
+   "room": "animals",
+   "theme": "animals",
+   "node": "Galleries/animals/Diorama_3",
+   "position": [
+    -89.39,
+    0.0,
+    43.81
+   ],
+   "yaw_degrees": 90.1
+  },
+  {
+   "kind": "diorama",
+   "room": "mammals_4",
+   "theme": "mammals",
+   "node": "Galleries/mammals_4/Diorama_3",
+   "position": [
+    -91.51,
+    0.0,
+    29.74
+   ],
+   "yaw_degrees": -89.9
+  },
+  {
+   "kind": "diorama",
+   "room": "mammals_4",
+   "theme": "mammals",
+   "node": "Galleries/mammals_4/Diorama_4",
+   "position": [
+    -91.52,
+    0.0,
+    25.49
+   ],
+   "yaw_degrees": -89.9
+  },
+  {
+   "kind": "diorama",
+   "room": "rice",
+   "theme": "nature",
+   "node": "Galleries/rice/Diorama_1",
+   "position": [
+    -89.43,
+    0.0,
+    3.62
+   ],
+   "yaw_degrees": 90.1
+  },
+  {
+   "kind": "diorama",
+   "room": "mammals_5",
+   "theme": "mammals",
+   "node": "Galleries/mammals_5/Diorama_2",
+   "position": [
+    -89.45,
+    0.0,
+    -15.66
+   ],
+   "yaw_degrees": 90.1
+  },
+  {
+   "kind": "diorama",
+   "room": "nature_walk",
+   "theme": "nature",
+   "node": "Galleries/nature_walk/Diorama_1",
+   "position": [
+    -89.46,
+    0.0,
+    -21.5
+   ],
+   "yaw_degrees": 90.1
+  },
+  {
+   "kind": "diorama",
+   "room": "nature_walk",
+   "theme": "nature",
+   "node": "Galleries/nature_walk/Diorama_2",
+   "position": [
+    -89.46,
+    0.0,
+    -25.75
+   ],
+   "yaw_degrees": 90.1
+  },
+  {
+   "kind": "diorama",
+   "room": "birds",
+   "theme": "birds",
+   "node": "Galleries/birds/Diorama_1",
+   "position": [
+    -89.48,
+    0.0,
+    -38.77
+   ],
+   "yaw_degrees": 90.1
+  },
+  {
+   "kind": "diorama",
+   "room": "birds",
+   "theme": "birds",
+   "node": "Galleries/birds/Diorama_2",
+   "position": [
+    -89.48,
+    0.0,
+    -43.02
+   ],
+   "yaw_degrees": 90.1
+  },
+  {
+   "kind": "diorama",
+   "room": "mammals_5",
+   "theme": "mammals",
+   "node": "Galleries/mammals_5/Diorama_3",
+   "position": [
+    -88.17,
+    0.0,
+    -6.84
+   ],
+   "yaw_degrees": -180.0
+  },
+  {
+   "kind": "diorama",
+   "room": "nature_walk",
+   "theme": "nature",
+   "node": "Galleries/nature_walk/Diorama_3",
+   "position": [
+    -86.69,
+    0.0,
+    -20.43
+   ],
+   "yaw_degrees": -180.0
+  },
+  {
+   "kind": "diorama",
+   "room": "birds",
+   "theme": "birds",
+   "node": "Galleries/birds/Diorama_3",
+   "position": [
+    -32.16,
+    0.0,
+    -33.79
+   ],
+   "yaw_degrees": -90.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "africa",
+   "theme": "africa",
+   "node": "Galleries/africa/Vitrine_1",
+   "position": [
+    -67.98,
+    0.0,
+    13.37
+   ],
+   "yaw_degrees": 270.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "africa",
+   "theme": "africa",
+   "node": "Galleries/africa/Vitrine_2",
+   "position": [
+    -67.98,
+    0.0,
+    1.37
+   ],
+   "yaw_degrees": 0.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "africa",
+   "theme": "africa",
+   "node": "Galleries/africa/Vitrine_3",
+   "position": [
+    -71.98,
+    0.0,
+    5.37
+   ],
+   "yaw_degrees": 270.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "africa",
+   "theme": "africa",
+   "node": "Galleries/africa/Vitrine_4",
+   "position": [
+    -67.98,
+    0.0,
+    -2.63
+   ],
+   "yaw_degrees": 0.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "africa",
+   "theme": "africa",
+   "node": "Galleries/africa/Vitrine_5",
+   "position": [
+    -87.98,
+    0.0,
+    17.37
+   ],
+   "yaw_degrees": 0.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "africa",
+   "theme": "africa",
+   "node": "Galleries/africa/Vitrine_6",
+   "position": [
+    -75.98,
+    0.0,
+    1.37
+   ],
+   "yaw_degrees": 180.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "africa",
+   "theme": "africa",
+   "node": "Galleries/africa/Vitrine_7",
+   "position": [
+    -55.98,
+    0.0,
+    17.37
+   ],
+   "yaw_degrees": 0.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "africa",
+   "theme": "africa",
+   "node": "Galleries/africa/Vitrine_8",
+   "position": [
+    -43.98,
+    0.0,
+    9.37
+   ],
+   "yaw_degrees": 270.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "Bird_Habitats",
+   "theme": "birds",
+   "node": "Galleries/Bird_Habitats/Vitrine_1",
+   "position": [
+    -71.97,
+    0.0,
+    29.38
+   ],
+   "yaw_degrees": 180.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "Bird_Habitats",
+   "theme": "birds",
+   "node": "Galleries/Bird_Habitats/Vitrine_2",
+   "position": [
+    -67.97,
+    0.0,
+    29.38
+   ],
+   "yaw_degrees": 270.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "Bird_Habitats",
+   "theme": "birds",
+   "node": "Galleries/Bird_Habitats/Vitrine_3",
+   "position": [
+    -71.97,
+    0.0,
+    25.38
+   ],
+   "yaw_degrees": 90.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "reptiles",
+   "theme": "animals",
+   "node": "Galleries/reptiles/Vitrine_1",
+   "position": [
+    -46.4,
+    0.0,
+    25.37
+   ],
+   "yaw_degrees": 0.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "reptiles",
+   "theme": "animals",
+   "node": "Galleries/reptiles/Vitrine_2",
+   "position": [
+    -58.4,
+    0.0,
+    25.37
+   ],
+   "yaw_degrees": 180.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "animals",
+   "theme": "animals",
+   "node": "Galleries/animals/Vitrine_1",
+   "position": [
+    -43.97,
+    0.0,
+    36.66
+   ],
+   "yaw_degrees": 270.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "animals",
+   "theme": "animals",
+   "node": "Galleries/animals/Vitrine_2",
+   "position": [
+    -59.97,
+    0.0,
+    36.66
+   ],
+   "yaw_degrees": 90.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "animals",
+   "theme": "animals",
+   "node": "Galleries/animals/Vitrine_3",
+   "position": [
+    -87.97,
+    0.0,
+    36.66
+   ],
+   "yaw_degrees": 90.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "animals",
+   "theme": "animals",
+   "node": "Galleries/animals/Vitrine_4",
+   "position": [
+    -47.97,
+    0.0,
+    44.66
+   ],
+   "yaw_degrees": 270.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "birds",
+   "theme": "birds",
+   "node": "Galleries/birds/Vitrine_1",
+   "position": [
+    -76.03,
+    0.0,
+    -33.96
+   ],
+   "yaw_degrees": 90.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "birds",
+   "theme": "birds",
+   "node": "Galleries/birds/Vitrine_2",
+   "position": [
+    -72.03,
+    0.0,
+    -41.96
+   ],
+   "yaw_degrees": 270.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "birds",
+   "theme": "birds",
+   "node": "Galleries/birds/Vitrine_3",
+   "position": [
+    -80.03,
+    0.0,
+    -33.96
+   ],
+   "yaw_degrees": 180.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "birds",
+   "theme": "birds",
+   "node": "Galleries/birds/Vitrine_4",
+   "position": [
+    -72.03,
+    0.0,
+    -33.96
+   ],
+   "yaw_degrees": 0.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "nature_walk",
+   "theme": "nature",
+   "node": "Galleries/nature_walk/Vitrine_1",
+   "position": [
+    -68.02,
+    0.0,
+    -23.82
+   ],
+   "yaw_degrees": 90.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "nature_walk",
+   "theme": "nature",
+   "node": "Galleries/nature_walk/Vitrine_2",
+   "position": [
+    -64.02,
+    0.0,
+    -27.82
+   ],
+   "yaw_degrees": 270.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "nature_walk",
+   "theme": "nature",
+   "node": "Galleries/nature_walk/Vitrine_3",
+   "position": [
+    -40.02,
+    0.0,
+    -23.82
+   ],
+   "yaw_degrees": 90.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "nature_walk",
+   "theme": "nature",
+   "node": "Galleries/nature_walk/Vitrine_4",
+   "position": [
+    -48.02,
+    0.0,
+    -23.82
+   ],
+   "yaw_degrees": 90.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "mastaba",
+   "theme": "egypt",
+   "node": "Galleries/mastaba/Vitrine_1",
+   "position": [
+    -19.97,
+    0.0,
+    33.09
+   ],
+   "yaw_degrees": 90.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "pawnee_lodge",
+   "theme": "americas",
+   "node": "Galleries/pawnee_lodge/Vitrine_1",
+   "position": [
+    70.7,
+    0.0,
+    13.43
+   ],
+   "yaw_degrees": 270.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "pawnee_lodge",
+   "theme": "americas",
+   "node": "Galleries/pawnee_lodge/Vitrine_2",
+   "position": [
+    70.7,
+    0.0,
+    9.43
+   ],
+   "yaw_degrees": 180.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "apsaalooke",
+   "theme": "apsaalooke",
+   "node": "Galleries/apsaalooke/Vitrine_1",
+   "position": [
+    61.1,
+    0.0,
+    -2.6
+   ],
+   "yaw_degrees": 180.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "apsaalooke",
+   "theme": "apsaalooke",
+   "node": "Galleries/apsaalooke/Vitrine_2",
+   "position": [
+    45.1,
+    0.0,
+    9.4
+   ],
+   "yaw_degrees": 180.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "apsaalooke",
+   "theme": "apsaalooke",
+   "node": "Galleries/apsaalooke/Vitrine_3",
+   "position": [
+    49.1,
+    0.0,
+    17.4
+   ],
+   "yaw_degrees": 270.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "apsaalooke",
+   "theme": "apsaalooke",
+   "node": "Galleries/apsaalooke/Vitrine_4",
+   "position": [
+    61.1,
+    0.0,
+    9.4
+   ],
+   "yaw_degrees": 270.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "apsaalooke",
+   "theme": "apsaalooke",
+   "node": "Galleries/apsaalooke/Vitrine_5",
+   "position": [
+    57.1,
+    0.0,
+    13.4
+   ],
+   "yaw_degrees": 270.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "apsaalooke",
+   "theme": "apsaalooke",
+   "node": "Galleries/apsaalooke/Vitrine_6",
+   "position": [
+    49.1,
+    0.0,
+    13.4
+   ],
+   "yaw_degrees": 0.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "apsaalooke",
+   "theme": "apsaalooke",
+   "node": "Galleries/apsaalooke/Vitrine_7",
+   "position": [
+    57.1,
+    0.0,
+    5.4
+   ],
+   "yaw_degrees": 0.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "apsaalooke",
+   "theme": "apsaalooke",
+   "node": "Galleries/apsaalooke/Vitrine_8",
+   "position": [
+    69.1,
+    0.0,
+    -2.6
+   ],
+   "yaw_degrees": 180.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "americas",
+   "theme": "americas",
+   "node": "Galleries/americas/Vitrine_1",
+   "position": [
+    96.94,
+    0.0,
+    -16.0
+   ],
+   "yaw_degrees": 0.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "americas",
+   "theme": "americas",
+   "node": "Galleries/americas/Vitrine_2",
+   "position": [
+    100.94,
+    0.0,
+    36.0
+   ],
+   "yaw_degrees": 0.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "americas",
+   "theme": "americas",
+   "node": "Galleries/americas/Vitrine_3",
+   "position": [
+    76.94,
+    0.0,
+    -28.0
+   ],
+   "yaw_degrees": 90.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "americas",
+   "theme": "americas",
+   "node": "Galleries/americas/Vitrine_4",
+   "position": [
+    56.94,
+    0.0,
+    -36.0
+   ],
+   "yaw_degrees": 270.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "americas",
+   "theme": "americas",
+   "node": "Galleries/americas/Vitrine_5",
+   "position": [
+    84.94,
+    0.0,
+    -44.0
+   ],
+   "yaw_degrees": 0.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "americas",
+   "theme": "americas",
+   "node": "Galleries/americas/Vitrine_6",
+   "position": [
+    92.94,
+    0.0,
+    -44.0
+   ],
+   "yaw_degrees": 270.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "americas",
+   "theme": "americas",
+   "node": "Galleries/americas/Vitrine_7",
+   "position": [
+    96.94,
+    0.0,
+    -24.0
+   ],
+   "yaw_degrees": 0.0
+  },
+  {
+   "kind": "vitrine",
+   "room": "americas",
+   "theme": "americas",
+   "node": "Galleries/americas/Vitrine_8",
+   "position": [
+    100.94,
+    0.0,
+    -0.0
+   ],
+   "yaw_degrees": 270.0
+  }
+ ],
+ "doors": [
+  {
+   "center": [
+    -31.05,
+    0.0,
+    38.99
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "animals",
+    "hall"
+   ]
+  },
+  {
+   "center": [
+    -30.83,
+    0.0,
+    10.03
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "africa",
+    "hall"
+   ]
+  },
+  {
+   "center": [
+    -30.69,
+    0.0,
+    -9.59
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "mammals",
+    "staff"
+   ]
+  },
+  {
+   "center": [
+    -79.8,
+    0.0,
+    19.87
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "africa",
+    "birds"
+   ]
+  },
+  {
+   "center": [
+    -58.47,
+    0.0,
+    19.86
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "africa",
+    "animals"
+   ]
+  },
+  {
+   "center": [
+    -37.14,
+    0.0,
+    19.85
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "africa",
+    "staff"
+   ]
+  },
+  {
+   "center": [
+    45.49,
+    0.0,
+    19.82
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "apsaalooke",
+    "americas"
+   ]
+  },
+  {
+   "center": [
+    75.27,
+    0.0,
+    19.8
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "americas",
+    "americas"
+   ]
+  },
+  {
+   "center": [
+    -90.45,
+    0.0,
+    34.58
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "mammals",
+    "animals"
+   ]
+  },
+  {
+   "center": [
+    -90.48,
+    0.0,
+    11.47
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "mammals",
+    "africa"
+   ]
+  },
+  {
+   "center": [
+    -90.5,
+    0.0,
+    -11.64
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "mammals",
+    "mammals"
+   ]
+  },
+  {
+   "center": [
+    -90.53,
+    0.0,
+    -34.74
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "mammals",
+    "birds"
+   ]
+  },
+  {
+   "center": [
+    -86.35,
+    0.0,
+    6.04
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "nature",
+    "africa"
+   ]
+  },
+  {
+   "center": [
+    34.9,
+    0.0,
+    5.99
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "staff",
+    "apsaalooke"
+   ]
+  },
+  {
+   "center": [
+    79.2,
+    0.0,
+    5.97
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "staff",
+    "americas"
+   ]
+  },
+  {
+   "center": [
+    -82.23,
+    0.0,
+    0.13
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "nature",
+    "africa"
+   ]
+  },
+  {
+   "center": [
+    -75.55,
+    0.0,
+    -5.79
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "mammals",
+    "africa"
+   ]
+  },
+  {
+   "center": [
+    -45.66,
+    0.0,
+    -5.8
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "mammals",
+    "africa"
+   ]
+  },
+  {
+   "center": [
+    29.03,
+    0.0,
+    -5.84
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "staff",
+    "staff"
+   ]
+  },
+  {
+   "center": [
+    53.5,
+    0.0,
+    -5.85
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "staff",
+    "apsaalooke"
+   ]
+  },
+  {
+   "center": [
+    77.97,
+    0.0,
+    -5.86
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "staff",
+    "staff"
+   ]
+  },
+  {
+   "center": [
+    -60.9,
+    0.0,
+    25.87
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "birds",
+    "animals"
+   ]
+  },
+  {
+   "center": [
+    -79.79,
+    0.0,
+    31.88
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "birds",
+    "animals"
+   ]
+  },
+  {
+   "center": [
+    -58.46,
+    0.0,
+    31.87
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "animals",
+    "animals"
+   ]
+  },
+  {
+   "center": [
+    -37.13,
+    0.0,
+    31.86
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "staff",
+    "animals"
+   ]
+  },
+  {
+   "center": [
+    45.58,
+    0.0,
+    31.82
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "americas",
+    "store"
+   ]
+  },
+  {
+   "center": [
+    75.2,
+    0.0,
+    31.81
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "americas",
+    "staff"
+   ]
+  },
+  {
+   "center": [
+    -43.4,
+    0.0,
+    25.86
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "animals",
+    "staff"
+   ]
+  },
+  {
+   "center": [
+    21.99,
+    0.0,
+    47.1
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "hall",
+    "warm"
+   ]
+  },
+  {
+   "center": [
+    -79.65,
+    0.0,
+    -19.38
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "nature",
+    "mammals"
+   ]
+  },
+  {
+   "center": [
+    -57.93,
+    0.0,
+    -19.39
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "nature",
+    "mammals"
+   ]
+  },
+  {
+   "center": [
+    -36.21,
+    0.0,
+    -19.4
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "nature",
+    "mammals"
+   ]
+  },
+  {
+   "center": [
+    29.05,
+    0.0,
+    -19.43
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "americas",
+    "staff"
+   ]
+  },
+  {
+   "center": [
+    53.52,
+    0.0,
+    -19.44
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "americas",
+    "staff"
+   ]
+  },
+  {
+   "center": [
+    77.99,
+    0.0,
+    -19.46
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "americas",
+    "staff"
+   ]
+  },
+  {
+   "center": [
+    -31.11,
+    0.0,
+    -38.89
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "birds",
+    "hall"
+   ]
+  },
+  {
+   "center": [
+    -36.22,
+    0.0,
+    -31.46
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "nature",
+    "birds"
+   ]
+  },
+  {
+   "center": [
+    -57.94,
+    0.0,
+    -31.48
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "nature",
+    "birds"
+   ]
+  },
+  {
+   "center": [
+    -79.66,
+    0.0,
+    -31.49
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "nature",
+    "birds"
+   ]
+  },
+  {
+   "center": [
+    -21.11,
+    0.0,
+    -33.29
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "hall",
+    "nature"
+   ]
+  },
+  {
+   "center": [
+    -16.78,
+    0.0,
+    52.83
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "staff",
+    "hall"
+   ]
+  },
+  {
+   "center": [
+    -16.86,
+    0.0,
+    -25.31
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "nature",
+    "hall"
+   ]
+  },
+  {
+   "center": [
+    -21.1,
+    0.0,
+    -17.32
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "nature",
+    "hall"
+   ]
+  },
+  {
+   "center": [
+    -22.06,
+    0.0,
+    16.19
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "hall",
+    "egypt"
+   ]
+  },
+  {
+   "center": [
+    -17.64,
+    0.0,
+    25.89
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "egypt",
+    "hall"
+   ]
+  },
+  {
+   "center": [
+    -22.05,
+    0.0,
+    35.59
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "egypt",
+    "hall"
+   ]
+  },
+  {
+   "center": [
+    -26.47,
+    0.0,
+    25.89
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "staff",
+    "egypt"
+   ]
+  },
+  {
+   "center": [
+    21.96,
+    0.0,
+    24.3
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "hall",
+    "white"
+   ]
+  },
+  {
+   "center": [
+    17.16,
+    0.0,
+    53.6
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "hall",
+    "warm"
+   ]
+  },
+  {
+   "center": [
+    17.21,
+    0.0,
+    19.59
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "hall",
+    "white"
+   ]
+  },
+  {
+   "center": [
+    17.27,
+    0.0,
+    -12.83
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "hall",
+    "staff"
+   ]
+  },
+  {
+   "center": [
+    21.98,
+    0.0,
+    14.9
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "white",
+    "hall"
+   ]
+  },
+  {
+   "center": [
+    26.71,
+    0.0,
+    30.93
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "warm",
+    "hall"
+   ]
+  },
+  {
+   "center": [
+    26.73,
+    0.0,
+    19.61
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "white",
+    "hall"
+   ]
+  },
+  {
+   "center": [
+    26.77,
+    0.0,
+    -6.8
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "staff",
+    "staff"
+   ]
+  },
+  {
+   "center": [
+    26.82,
+    0.0,
+    -33.0
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "warm",
+    "staff"
+   ]
+  },
+  {
+   "center": [
+    64.78,
+    0.0,
+    38.92
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "store",
+    "staff"
+   ]
+  },
+  {
+   "center": [
+    30.75,
+    0.0,
+    38.86
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "hall",
+    "store"
+   ]
+  },
+  {
+   "center": [
+    30.8,
+    0.0,
+    13.07
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "hall",
+    "apsaalooke"
+   ]
+  },
+  {
+   "center": [
+    30.89,
+    0.0,
+    -39.33
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "staff",
+    "staff"
+   ]
+  },
+  {
+   "center": [
+    68.21,
+    0.0,
+    13.14
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "apsaalooke",
+    "americas"
+   ]
+  },
+  {
+   "center": [
+    90.14,
+    0.0,
+    34.15
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "staff",
+    "americas"
+   ]
+  },
+  {
+   "center": [
+    90.18,
+    0.0,
+    10.1
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "americas",
+    "americas"
+   ]
+  },
+  {
+   "center": [
+    90.21,
+    0.0,
+    -9.57
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "staff",
+    "americas"
+   ]
+  },
+  {
+   "center": [
+    21.47,
+    0.0,
+    -26.51
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "hall",
+    "warm"
+   ]
+  },
+  {
+   "center": [
+    16.51,
+    0.0,
+    -36.32
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "hall",
+    "warm"
+   ]
+  },
+  {
+   "center": [
+    -23.65,
+    0.0,
+    -46.2
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "hall",
+    "staff"
+   ]
+  },
+  {
+   "center": [
+    19.51,
+    0.0,
+    -50.41
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "hall",
+    "warm"
+   ]
+  },
+  {
+   "center": [
+    -15.36,
+    0.0,
+    -54.65
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "staff",
+    "hall"
+   ]
+  },
+  {
+   "center": [
+    15.81,
+    0.0,
+    -54.7
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "warm",
+    "hall"
+   ]
+  },
+  {
+   "center": [
+    12.07,
+    0.0,
+    -57.84
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "hall",
+    "warm"
+   ]
+  },
+  {
+   "center": [
+    14.03,
+    0.0,
+    -61.01
+   ],
+   "width": 3.01,
+   "height": 4.2,
+   "connects": [
+    "hall",
+    "warm"
+   ]
+  },
+  {
+   "center": [
+    38.67,
+    0.0,
+    -39.32
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "staff",
+    "americas"
+   ]
+  },
+  {
+   "center": [
+    32.56,
+    0.0,
+    -32.26
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "americas",
+    "staff"
+   ]
+  },
+  {
+   "center": [
+    73.31,
+    0.0,
+    0.17
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "apsaalooke",
+    "staff"
+   ]
+  },
+  {
+   "center": [
+    43.41,
+    0.0,
+    0.12
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "staff",
+    "apsaalooke"
+   ]
+  },
+  {
+   "center": [
+    36.68,
+    0.0,
+    25.73
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "hall",
+    "americas"
+   ]
+  },
+  {
+   "center": [
+    85.93,
+    0.0,
+    41.35
+   ],
+   "width": 2.6,
+   "height": 3.0,
+   "connects": [
+    "staff",
+    "americas"
+   ]
+  },
+  {
+   "center": [
+    -22.39,
+    0.0,
+    45.55
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "hall",
+    "staff"
+   ]
+  },
+  {
+   "center": [
+    -11.17,
+    0.0,
+    -58.77
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "staff",
+    "hall"
+   ]
+  },
+  {
+   "center": [
+    -19.51,
+    0.0,
+    -50.12
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "staff",
+    "hall"
+   ]
+  },
+  {
+   "center": [
+    19.08,
+    0.0,
+    33.93
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "hall",
+    "warm"
+   ]
+  },
+  {
+   "center": [
+    11.64,
+    0.0,
+    30.9
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "hall",
+    "warm"
+   ]
+  },
+  {
+   "center": [
+    19.09,
+    0.0,
+    27.9
+   ],
+   "width": 4.0,
+   "height": 4.2,
+   "connects": [
+    "warm",
+    "hall"
+   ]
+  }
+ ],
+ "points_of_interest": [
+  {
+   "node": "POI_south_entrance",
+   "kind": "entrance",
+   "id": "south_entrance",
+   "label": "South Entrance",
+   "position": [
+    0.26,
+    0.0,
+    61.1
+   ]
+  },
+  {
+   "node": "POI_north_entrance",
+   "kind": "entrance",
+   "id": "north_entrance",
+   "label": "North Entrance",
+   "position": [
+    0.13,
+    0.0,
+    -63.04
+   ]
+  },
+  {
+   "node": "POI_maximo",
+   "kind": "exhibit",
+   "id": "maximo",
+   "label": "Máximo the Titanosaur",
+   "position": [
+    -3.0,
+    0.0,
+    -27.0
+   ]
+  },
+  {
+   "node": "POI_elephants",
+   "kind": "exhibit",
+   "id": "elephants",
+   "label": "Fighting African Elephants",
+   "position": [
+    -0.6,
+    0.0,
+    -1.0
+   ]
+  },
+  {
+   "node": "POI_totems",
+   "kind": "exhibit",
+   "id": "totems",
+   "label": "Totem Poles",
+   "position": [
+    -0.6,
+    0.0,
+    17.0
+   ]
+  },
+  {
+   "node": "POI_tsavo_lions",
+   "kind": "exhibit",
+   "id": "tsavo_lions",
+   "label": "The Lions of Tsavo",
+   "position": [
+    -103.42,
+    0.0,
+    -1.36
+   ]
+  },
+  {
+   "node": "POI_seabirds",
+   "kind": "exhibit",
+   "id": "seabirds",
+   "label": "Plunge-Diving Seabirds",
+   "position": [
+    -60.82,
+    0.0,
+    -45.37
+   ]
+  },
+  {
+   "node": "POI_mask",
+   "kind": "exhibit",
+   "id": "mask",
+   "label": "Greenstone Mask",
+   "position": [
+    41.68,
+    0.0,
+    -22.94
+   ]
+  },
+  {
+   "node": "POI_pawnee_lodge",
+   "kind": "exhibit",
+   "id": "pawnee_lodge",
+   "label": "Pawnee Earth Lodge",
+   "position": [
+    80.69,
+    0.0,
+    13.15
+   ]
+  },
+  {
+   "node": "POI_mastaba",
+   "kind": "exhibit",
+   "id": "mastaba",
+   "label": "Mastaba Tomb Chapel",
+   "position": [
+    -22.65,
+    0.0,
+    25.89
+   ]
+  },
+  {
+   "node": "Amenity_restroom_1",
+   "kind": "amenity",
+   "id": "restroom",
+   "label": "restroom",
+   "position": [
+    -25.93,
+    0.0,
+    -8.55
+   ]
+  },
+  {
+   "node": "Amenity_stairs_up_down_1",
+   "kind": "amenity",
+   "id": "stairs_up_down",
+   "label": "stairs up down",
+   "position": [
+    -28.54,
+    0.0,
+    -41.72
+   ]
+  },
+  {
+   "node": "Amenity_stairs_up_1",
+   "kind": "amenity",
+   "id": "stairs_up",
+   "label": "stairs up",
+   "position": [
+    -16.73,
+    0.0,
+    -50.21
+   ]
+  },
+  {
+   "node": "Amenity_stairs_up_2",
+   "kind": "amenity",
+   "id": "stairs_up",
+   "label": "stairs up",
+   "position": [
+    16.34,
+    0.0,
+    -50.1
+   ]
+  },
+  {
+   "node": "Amenity_stairs_down_1",
+   "kind": "amenity",
+   "id": "stairs_down",
+   "label": "stairs down",
+   "position": [
+    22.13,
+    0.0,
+    0.02
+   ]
+  },
+  {
+   "node": "Amenity_stairs_down_2",
+   "kind": "amenity",
+   "id": "stairs_down",
+   "label": "stairs down",
+   "position": [
+    -21.93,
+    0.0,
+    0.16
+   ]
+  },
+  {
+   "node": "Amenity_elevator_1",
+   "kind": "amenity",
+   "id": "elevator",
+   "label": "elevator",
+   "position": [
+    -27.63,
+    0.0,
+    8.46
+   ]
+  },
+  {
+   "node": "Amenity_elevator_2",
+   "kind": "amenity",
+   "id": "elevator",
+   "label": "elevator",
+   "position": [
+    27.65,
+    0.0,
+    8.53
+   ]
+  },
+  {
+   "node": "Amenity_store_1",
+   "kind": "amenity",
+   "id": "store",
+   "label": "store",
+   "position": [
+    33.93,
+    0.0,
+    38.99
+   ]
+  },
+  {
+   "node": "Amenity_atm_1",
+   "kind": "amenity",
+   "id": "atm",
+   "label": "atm",
+   "position": [
+    -2.15,
+    0.0,
+    59.18
+   ]
+  },
+  {
+   "node": "Amenity_stairs_up_3",
+   "kind": "amenity",
+   "id": "stairs_up",
+   "label": "stairs up",
+   "position": [
+    -4.48,
+    0.0,
+    47.39
+   ]
+  },
+  {
+   "node": "Amenity_stairs_up_down_2",
+   "kind": "amenity",
+   "id": "stairs_up_down",
+   "label": "stairs up down",
+   "position": [
+    -28.37,
+    0.0,
+    42.27
+   ]
+  },
+  {
+   "node": "Amenity_stairs_up_4",
+   "kind": "amenity",
+   "id": "stairs_up",
+   "label": "stairs up",
+   "position": [
+    -88.18,
+    0.0,
+    -41.68
+   ]
+  },
+  {
+   "node": "Amenity_stairs_up_5",
+   "kind": "amenity",
+   "id": "stairs_up",
+   "label": "stairs up",
+   "position": [
+    88.19,
+    0.0,
+    42.09
+   ]
+  },
+  {
+   "node": "Amenity_store_2",
+   "kind": "amenity",
+   "id": "store",
+   "label": "store",
+   "position": [
+    63.64,
+    0.0,
+    15.99
+   ]
+  }
+ ],
+ "meta": {
+  "units": "metres",
+  "axes": "Y up, +X east, -Z north; origin = centre of the building; floor y = 0",
+  "rotation_applied_degrees": -1.034,
+  "heights": {
+   "gallery_ceiling": 5.0,
+   "hall_ceiling": 10.0,
+   "nave_vault_top": 21.0
+  },
+  "nave": {
+   "x": [
+    -12.0,
+    10.8
+   ],
+   "z": [
+    -45.0,
+    45.0
+   ]
+  },
+  "source": "Field Museum open indoor map (CC BY 4.0, Portions Copyright 2020 Field Museum of Natural History)"
+ },
+ "building_outline": [
+  [
+   -16.94,
+   -61.01
+  ],
+  [
+   -16.9,
+   -67.0
+  ],
+  [
+   -11.04,
+   -66.94
+  ],
+  [
+   -11.08,
+   -64.84
+  ],
+  [
+   -9.86,
+   -63.05
+  ],
+  [
+   9.79,
+   -63.04
+  ],
+  [
+   11.13,
+   -64.85
+  ],
+  [
+   11.14,
+   -67.01
+  ],
+  [
+   16.96,
+   -67.0
+  ],
+  [
+   16.97,
+   -61.04
+  ],
+  [
+   27.82,
+   -61.02
+  ],
+  [
+   27.9,
+   -47.42
+  ],
+  [
+   90.47,
+   -47.32
+  ],
+  [
+   90.44,
+   -50.19
+  ],
+  [
+   105.54,
+   -50.21
+  ],
+  [
+   105.58,
+   50.5
+  ],
+  [
+   90.53,
+   50.48
+  ],
+  [
+   90.51,
+   47.09
+  ],
+  [
+   27.98,
+   47.12
+  ],
+  [
+   27.95,
+   61.11
+  ],
+  [
+   17.05,
+   61.06
+  ],
+  [
+   17.06,
+   66.92
+  ],
+  [
+   11.58,
+   66.93
+  ],
+  [
+   11.57,
+   61.07
+  ],
+  [
+   -11.41,
+   61.12
+  ],
+  [
+   -11.4,
+   66.99
+  ],
+  [
+   -16.93,
+   67.0
+  ],
+  [
+   -16.93,
+   61.13
+  ],
+  [
+   -27.71,
+   61.18
+  ],
+  [
+   -27.77,
+   47.12
+  ],
+  [
+   -90.5,
+   47.16
+  ],
+  [
+   -90.46,
+   50.64
+  ],
+  [
+   -105.54,
+   50.63
+  ],
+  [
+   -105.59,
+   -50.07
+  ],
+  [
+   -90.54,
+   -50.06
+  ],
+  [
+   -90.59,
+   -47.31
+  ],
+  [
+   -27.74,
+   -47.34
+  ],
+  [
+   -27.72,
+   -60.99
+  ]
+ ],
+ "georeference": {
+  "note": "Model (x, z) from WGS84: Web Mercator (EPSG:3857) X,Y -> e=(X-origin_x)*scale, n=(Y-origin_y)*scale -> rotate (e,n) by -rotation_degrees -> x=e', z=-n'. Compass bearing b (deg, clockwise from true north) -> model bearing b+rotation_degrees.",
+  "center_latitude": 41.866245334744065,
+  "center_longitude": -87.61704008677765,
+  "mercator_origin_x": -9753484.287273927,
+  "mercator_origin_y": 5140964.65345007,
+  "scale": 0.7447048572672694,
+  "rotation_degrees": 1.033684525446806
+ }
+}
