@@ -9,7 +9,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Float, ForeignKey
 from pydantic import BaseModel
 
 # Connecting to database
-connection_to_the_database = "postgresql://user:password@server_ip/db_name"
+connection_to_the_database = "postgresql://postgres:postgres@127.0.0.1/chicago_fmonh_exhibitional_and_artefact_data"
 
 # Creating the engine with the connection string --> creating a session to connect to database
 # Creating the base for models and schemes
@@ -31,6 +31,7 @@ def getting_database():
 application = FastAPI()
 @application.get("/") # Informacje o eksponacie w muzeum
 def read_the_database(db:Session = Depends(detting_database)):
-
+    users = database.query().all()
+    return users
 
 # This is only the pre-functionality
