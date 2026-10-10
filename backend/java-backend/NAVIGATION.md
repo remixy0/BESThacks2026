@@ -5,6 +5,22 @@ logowania; sposób połączenia i ciasteczka opisano w `AUTH.md` i `WEBSOCKET.md
 Nawigacja jest przypisana do pojedynczego połączenia. Po ponownym połączeniu
 wyślij aktualną pozycję oraz cel jeszcze raz.
 
+## Aktualna mapa
+
+Backend korzysta z podmienionego pliku `src/main/resources/maps/field-museum-main-level.grid.json`.
+Układ współrzędnych pozostaje taki sam: metry, kratki 0,2 m, początek siatki
+`(-106.6, -68.2)`, rozmiar 1066 × 681. Nowy sugerowany start to `(0.1, 55.9)`.
+Mapa zawiera już bufor 1 m dla środków przechodnich komórek przy przeszkodach.
+Margines 0,3 m dla dynamicznych stref administratora pozostaje bez zmian.
+
+Aplikacja powinna używać nowego pliku mapy i współrzędnych `pointsOfInterest[].approach`
+do wyboru celów; część starych punktów znajduje się teraz w zablokowanych komórkach.
+Dostępne są 24 punkty z 25. Pawnee Earth Lodge i Mastaba mają teraz dostępne punkty
+podejścia, natomiast punkt `restroom` ma `approach: null` i nie powinien być wybierany
+jako cel. Wyjścia używane przez alarm to `(0.3, 59.9)` oraz `(0.1, -61.9)`.
+Identyfikator mapy i format wiadomości WebSocket pozostają bez zmian.
+Po podmianie pliku należy zrestartować backend, ponieważ ładuje mapę przy uruchomieniu.
+
 ## Wiadomości aplikacji
 
 Aktualna pozycja w metrach, w układzie mapy:
@@ -18,7 +34,7 @@ Poprzedni format `{"x":-0.5,"y":51.9}` nadal działa.
 Wybrany cel — tutaj dostępny punkt przy północnym wejściu z pliku mapy:
 
 ```json
-{"type":"destination","x":0.1,"y":-62.3}
+{"type":"destination","x":0.1,"y":-61.9}
 ```
 
 Cel można przesłać przed pozycją; serwer odpowie `awaiting_position`.
@@ -117,7 +133,7 @@ socket.onmessage = event => {
 
 socket.onopen = () => {
   socket.send(JSON.stringify({type: "position", x: -0.5, y: 51.9}));
-  socket.send(JSON.stringify({type: "destination", x: 0.1, y: -62.3}));
+  socket.send(JSON.stringify({type: "destination", x: 0.1, y: -61.9}));
 };
 ```
 

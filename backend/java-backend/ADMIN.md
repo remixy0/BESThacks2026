@@ -104,7 +104,7 @@ Przykład struktury `policy`:
   "revision":1,
   "alarmActive":true,
   "zones":[],
-  "exits":[{"x":0.1,"y":-62.3}]
+  "exits":[{"x":0.1,"y":-61.9}]
 }
 ```
 
