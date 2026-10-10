@@ -119,7 +119,7 @@ class PathfinderTests {
                 }
                 checked++;
             }
-            assertThat(checked).isEqualTo(23);
+            assertThat(checked).isEqualTo(24);
         }
     }
 }
