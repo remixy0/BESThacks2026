@@ -133,7 +133,7 @@ struct Map2DView: View {
             beam.closeSubpath()
             context.fill(beam, with: .color(MapPalette.user.opacity(0.22)))
         }
-        if let accuracy = guide.positioning.accuracy, guide.positioning.source == .beacons {
+        if let accuracy = guide.positioning.accuracy, guide.positioning.source == .beacons || guide.positioning.source == .steps {
             let r = CGFloat(accuracy) * scale
             context.fill(Path(ellipseIn: CGRect(x: me.x - r, y: me.y - r, width: r * 2, height: r * 2)),
                          with: .color(MapPalette.user.opacity(0.1)))

@@ -26,7 +26,6 @@ struct MapScreen: View {
                 ListenModeView(guide: guide, visits: visits, onSettings: { showSettings = true })
             } else {
                 mapScreen
-                    .soundScreen(.map, guide: guide)
             }
         }
         // Haptics and "visited" ticks live in a tiny view of their own, so the guide's frequent events
@@ -36,14 +35,12 @@ struct MapScreen: View {
             ArtifactListView(guide: guide, visits: visits) {
                 showExhibits = false
             }
-            .soundScreen(.exhibits, guide: guide)
         }
         .sheet(isPresented: $showSettings) {
             SettingsView(guide: guide, visits: visits, account: account, mode: $mode,
                          onShowIntro: { showSettings = false; onShowIntro() },
                          onRecalibrate: { showSettings = false; onRecalibrate() },
                          onLogout: { showSettings = false; onLogout() })
-            .soundScreen(.settings, guide: guide)
         }
         .sheet(item: $detail) { exhibit in
             NavigationStack {
@@ -105,23 +102,17 @@ struct MapScreen: View {
     private func mapLayer(covered: EdgeInsets) -> some View {
         switch style {
         case .plan:
-            Map2DView(guide: guide, visited: visits.visited, covered: covered) { pick($0) }
+            Map2DView(guide: guide, visited: visits.visited, covered: covered) { guide.preview = $0 }
                 .transition(.opacity)
         case .overview, .eyeLevel:
-            Map3DView(guide: guide, style: style, visited: visits.visited, covered: covered) { pick($0) }
+            Map3DView(guide: guide, style: style, visited: visits.visited, covered: covered) { guide.preview = $0 }
                 .transition(.opacity)
         }
     }
 
-    /// A pin was tapped on the map: like a button, it cuts off what the guide was saying.
-    private func pick(_ exhibit: MuseumInfo.Exhibit) {
-        guide.userTapped()
-        guide.preview = exhibit
-    }
-
     /// Something worth telling you (missing data, route service problem, voice fell back…).
     private var notice: String? {
-        guide.loadError ?? guide.statusMessage ?? guide.audio.speechNotice ?? guide.voiceInput.problem ?? account.notice
+        guide.loadError ?? guide.statusMessage ?? guide.audio.speechNotice ?? guide.voiceInput.problem
     }
 }
 
@@ -143,21 +134,17 @@ private struct GuideEvents: View {
             // Facing the right way: a firm, unmistakable tap.
             .sensoryFeedback(.impact(weight: .heavy, intensity: 1), trigger: guide.onTrackEvent)
             .sensoryFeedback(.warning, trigger: guide.offRouteEvent)
-            // The museum alarm went on or off.
-            .sensoryFeedback(.error, trigger: guide.alarmEvent)
             .onChange(of: guide.arrivalEvent) { _, _ in
-                if let arrived = guide.arrived, !GuideModel.isExit(arrived) { visits.mark(arrived.key) }
+                if let arrived = guide.arrived { visits.mark(arrived.key) }
             }
             .onChange(of: guide.speechFinishedEvent) { _, _ in
-                // Only while the map is in front (not under Settings or the exhibit list).
-                guard mode == .standard, guide.screen == .map, guide.listenAfterSpeech else { return }
+                guard mode == .standard, guide.listenAfterSpeech else { return }
                 guide.listenAfterSpeech = false
                 Task { await runMapVoice(guide: guide, visits: visits) }
             }
-            // You said the wake phrase ("Hej przewodniku"): listen for the command.
-            .onChange(of: guide.wakeWord.heardEvent) { _, _ in
-                guard mode == .standard, guide.screen == .map else { return }
-                guide.listenAfterSpeech = false
+            // "Hej Bloop": take a command (listening mode handles its own).
+            .onChange(of: guide.wakeEvent) { _, _ in
+                guard mode == .standard, !guide.voiceInput.isBusy else { return }
                 Task { await runMapVoice(guide: guide, visits: visits) }
             }
             .accessibilityHidden(true)

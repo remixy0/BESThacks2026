@@ -1,4 +1,3 @@
-import Foundation
 import SwiftUI
 
 /// Settings, kept short: language, how you explore, the voice, calibration, and your account up front;
@@ -16,10 +15,23 @@ struct SettingsView: View {
     @State private var confirmReset = false
     @State private var confirmLogout = false
     @State private var language = LanguageSettings.shared
+    @State private var wakeDraft = ""
 
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    Picker(tr("Language", "Język"), selection: $language.current) {
+                        ForEach(AppLanguage.allCases) { option in
+                            Text(option.title).tag(option)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets())
+                } header: {
+                    Text(tr("Language", "Język"))
+                }
                 modeSection
                 Section {
                     NavigationLink {
@@ -27,7 +39,6 @@ struct SettingsView: View {
                     } label: {
                         SettingsRow(title: tr("Voice", "Głos"), systemImage: "waveform", tint: Theme.coral, value: guide.voice.shortSummary)
                     }
-                    speedRow
                     Button(action: onRecalibrate) {
                         SettingsRow(title: tr("Calibrate again", "Skalibruj ponownie"), systemImage: "scope", tint: Theme.accent)
                     }
@@ -36,7 +47,6 @@ struct SettingsView: View {
                             "Skalibruj ponownie, jeśli kierunki się nie zgadzają albo po ponownym połączeniu AirPodsów."))
                 }
                 guidanceSection
-                wakeSection
                 positionSection
                 Section {
                     NavigationLink {
@@ -45,11 +55,12 @@ struct SettingsView: View {
                         SettingsRow(title: tr("Server, beacons and keys", "Serwer, beacony i klucze"), systemImage: "slider.horizontal.3", tint: Theme.inkSoft)
                     }
                 }
-                languageSection
                 accountSection
             }
             .scrollContentBackground(.hidden)
             .background(Theme.page)
+            .onAppear { wakeDraft = guide.customWakePhrase }
+            .onDisappear(perform: saveWakePhrase)
             .navigationTitle(tr("Settings", "Ustawienia"))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -72,69 +83,18 @@ struct SettingsView: View {
 
     // MARK: - Sections
 
-    /// The two ways to explore, as two big cards side by side.
     private var modeSection: some View {
         Section {
-            HStack(alignment: .top, spacing: 10) {
-                ForEach([UserMode.standard, UserMode.blind]) { option in
-                    ModeCard(mode: option, isSelected: mode == option) {
-                        withAnimation(.easeOut(duration: 0.15)) { mode = option }
-                    }
+            Picker(tr("How you explore", "Jak zwiedzasz"), selection: $mode) {
+                ForEach(Array(UserMode.allCases.reversed())) { option in
+                    Text(option.shortTitle).tag(option)
                 }
             }
+            .pickerStyle(.segmented)
             .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets())
-        } header: {
-            Text(tr("How you explore", "Jak zwiedzasz"))
-        }
-    }
-
-    /// How fast the narrator speaks. Letting go plays a short sample at the new speed.
-    private var speedRow: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            SettingsRow(title: tr("Narrator speed", "Tempo lektora"), systemImage: "speedometer", tint: Theme.coral,
-                        value: VoiceSettings.speedName(guide.voice.speed))
-            HStack(spacing: 10) {
-                Image(systemName: "tortoise.fill")
-                    .foregroundStyle(Theme.inkSoft)
-                    .accessibilityHidden(true)
-                Slider(value: Bindable(guide.voice).speed, in: 0.7...1.2, step: 0.02,
-                       onEditingChanged: { editing in
-                           if !editing { guide.previewSpeed() }
-                       })
-                    .tint(Theme.coral)
-                    .accessibilityLabel(tr("Narrator speed", "Tempo lektora"))
-                    .accessibilityValue(VoiceSettings.speedName(guide.voice.speed))
-                Image(systemName: "hare.fill")
-                    .foregroundStyle(Theme.inkSoft)
-                    .accessibilityHidden(true)
-            }
-        }
-        .padding(.vertical, 2)
-    }
-
-    /// The app's language, with its flag.
-    private var languageSection: some View {
-        Section {
-            Picker(selection: $language.current) {
-                ForEach(AppLanguage.allCases) { option in
-                    Text("\(option.flag)  \(option.title)").tag(option)
-                }
-            } label: {
-                SettingsRow(title: tr("Language", "Język"), systemImage: "globe", tint: Theme.accent)
-            }
-            .pickerStyle(.menu)
-        }
-    }
-
-    /// The backend connection, in a few words.
-    private var serverStatus: (text: String, tint: Color) {
-        switch guide.server.state {
-        case .online: (text: tr("Connected", "Połączono"), tint: Theme.mint)
-        case .connecting: (text: tr("Connecting…", "Łączę…"), tint: Theme.amber)
-        case .noServer: (text: tr("None, local data", "Brak, dane lokalne"), tint: Theme.inkSoft)
-        case .offline: (text: tr("Local data (server unavailable)", "Dane lokalne (serwer niedostępny)"), tint: Theme.amber)
-        case .off: (text: tr("Paused", "Wstrzymane"), tint: Theme.inkSoft)
+        } footer: {
+            Text(mode.detail)
         }
     }
 
@@ -151,6 +111,22 @@ struct SettingsView: View {
             }
             Toggle(isOn: $guide.listenOnArrival) {
                 SettingsRow(title: tr("Listen for my voice when asked", "Słuchaj mojego głosu, gdy pytasz"), systemImage: "mic.fill", tint: Theme.coral)
+            }
+            Toggle(isOn: $guide.wakeWordEnabled) {
+                SettingsRow(title: tr("Wake phrase", "Hasło wywołania"), systemImage: "ear.fill", tint: Theme.coral)
+            }
+            if guide.wakeWordEnabled {
+                HStack(spacing: 10) {
+                    TextField(tr("Hey Bloop", "Hej Bloop"), text: $wakeDraft)
+                        .autocorrectionDisabled()
+                        .submitLabel(.done)
+                        .onSubmit(saveWakePhrase)
+                    if wakeDraft.trimmingCharacters(in: .whitespacesAndNewlines) != guide.customWakePhrase {
+                        Button(tr("Save", "Zapisz"), action: saveWakePhrase)
+                            .font(Theme.bodyBold)
+                            .buttonStyle(.borderless)
+                    }
+                }
             }
             VStack(alignment: .leading, spacing: 8) {
                 SettingsRow(title: tr("Bloop rhythm", "Rytm dźwięków"), systemImage: "metronome.fill", tint: Theme.coral)
@@ -174,35 +150,31 @@ struct SettingsView: View {
             }
         } header: {
             Text(tr("Guide", "Przewodnik"))
+        } footer: {
+            Text(wakeFooter)
         }
     }
 
-    private var wakeSection: some View {
-        @Bindable var wake = guide.wakeWord
-        return Section {
-            Toggle(isOn: $wake.isEnabled) {
-                SettingsRow(title: tr("Wake phrase", "Wywołuj hasłem"), systemImage: "waveform.badge.mic", tint: Theme.coral)
-            }
-            if wake.isEnabled {
-                LabeledContent {
-                    TextField(WakeWordListener.defaultPhrase, text: $wake.phrase)
-                        .multilineTextAlignment(.trailing)
-                        .autocorrectionDisabled()
-                        .submitLabel(.done)
-                } label: {
-                    Text(tr("Phrase", "Hasło"))
-                }
-                LabeledContent(tr("Status", "Stan")) {
-                    Text(wake.statusText)
-                        .multilineTextAlignment(.trailing)
-                }
-            }
-        } header: {
-            Text(tr("Talk without touching", "Mów bez dotykania"))
-        } footer: {
-            Text(tr("Say the phrase (for example \u{201C}\(wake.effectivePhrase)\u{201D}) and then your command, like \u{201C}tell me\u{201D} or an exhibit's name. While this is on, the microphone stays on, which uses some battery. Two or three words work best.",
-                    "Powiedz hasło (np. „\(wake.effectivePhrase)”), a potem polecenie, np. „opowiedz” albo nazwę eksponatu. Gdy to jest włączone, mikrofon cały czas słucha, co zużywa trochę baterii. Najlepiej działają dwa–trzy słowa."))
+    private var wakeFooter: String {
+        guard guide.wakeWordEnabled else {
+            return tr("Turn on the wake phrase to give commands without touching the phone.",
+                      "Włącz hasło wywołania, żeby wydawać polecenia bez dotykania telefonu.")
         }
+        if let problem = guide.wakeWord.problem { return problem }
+        if !guide.voice.hasAPIKey {
+            return tr("The wake phrase needs an ElevenLabs key (it recognizes the command that follows).",
+                      "Hasło wywołania potrzebuje klucza ElevenLabs (rozpoznaje polecenie, które po nim pada).")
+        }
+        return tr("Say “\(guide.wakePhrase)”, then your command, e.g. “\(guide.wakePhrase)… next”. Leave the field empty for the default. Short, unusual phrases work best.",
+                  "Powiedz „\(guide.wakePhrase)”, a potem polecenie, np. „\(guide.wakePhrase)… dalej”. Puste pole = domyślne hasło. Najlepiej działają krótkie, nietypowe hasła.")
+    }
+
+    private func saveWakePhrase() {
+        var typed = wakeDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        // The default phrase (in either language) is kept as "no custom phrase", so it follows the language.
+        if ["hey bloop", "hej bloop"].contains(typed.lowercased()) { typed = "" }
+        wakeDraft = typed
+        if typed != guide.customWakePhrase { guide.customWakePhrase = typed }
     }
 
     private var positionSection: some View {
@@ -212,6 +184,12 @@ struct SettingsView: View {
                     .multilineTextAlignment(.trailing)
             } label: {
                 SettingsRow(title: tr("Position", "Pozycja"), systemImage: "location", tint: guide.positioning.isHealthy ? Theme.mint : Theme.amber)
+            }
+            NavigationLink {
+                BeaconLayoutView(positioning: guide.positioning)
+            } label: {
+                SettingsRow(title: tr("Beacon layout and steps", "Układ beaconów i kroki"), systemImage: "square.dashed", tint: Theme.accent,
+                            value: guide.positioning.usesLayout ? tr("Mine", "Mój") : tr("Server", "Serwer"))
             }
             Toggle(isOn: $guide.demoWalk) {
                 SettingsRow(title: tr("Demo: walk routes by itself", "Demo: sam przechodź trasę"), systemImage: "figure.walk.motion", tint: Theme.inkSoft)
@@ -228,12 +206,6 @@ struct SettingsView: View {
         Section {
             if let current = account.account {
                 LabeledContent(tr("Signed in as", "Zalogowano jako"), value: current.isDemo ? "\(current.email) (demo)" : current.email)
-            }
-            LabeledContent {
-                Text(serverStatus.text)
-                    .multilineTextAlignment(.trailing)
-            } label: {
-                SettingsRow(title: tr("Server", "Serwer"), systemImage: "server.rack", tint: serverStatus.tint)
             }
             Button(action: onShowIntro) {
                 SettingsRow(title: tr("Back to the welcome screen", "Wróć do ekranu powitalnego"), systemImage: "house", tint: Theme.accent)
@@ -261,8 +233,6 @@ struct SettingsView: View {
 struct VoicePickerView: View {
     @Bindable var guide: GuideModel
     @State private var customID = ""
-    @State private var savedUsage = SpeechCache.Usage()
-    @State private var savedStories: (saved: Int, total: Int)?
 
     var body: some View {
         let voice = guide.voice
@@ -278,6 +248,16 @@ struct VoicePickerView: View {
                 .listRowInsets(EdgeInsets())
             } footer: {
                 Text(voiceStatus)
+            }
+
+            Section {
+                VStack(alignment: .leading, spacing: 6) {
+                    LabeledContent(tr("Speaking speed", "Tempo mowy"), value: speedName(voice.speed))
+                    Slider(value: Bindable(voice).speed, in: 0.7...1.2, step: 0.02)
+                        .tint(Theme.accent)
+                }
+            } footer: {
+                Text(tr("Slower is easier to follow while walking.", "Wolniej łatwiej zrozumieć w trakcie chodzenia."))
             }
 
             if voice.engine == .elevenLabs, voice.hasAPIKey {
@@ -314,8 +294,6 @@ struct VoicePickerView: View {
                     Text(tr("Lifelike sounds best. Fast starts speaking sooner.", "„Lifelike” brzmi najlepiej. „Fast” zaczyna mówić szybciej."))
                 }
 
-                savedSpeechSection
-
                 Section {
                     TextField(tr("Voice ID from the ElevenLabs Voice Library", "ID głosu z biblioteki ElevenLabs"), text: $customID)
                         .autocorrectionDisabled()
@@ -351,72 +329,13 @@ struct VoicePickerView: View {
                 Task { await guide.voice.loadVoices() }
             }
         }
-        .task(id: savedSpeechKey) { refreshSavedSpeech() }
     }
 
-    // MARK: - Saved speech (ElevenLabs cache)
-
-    private var savedSpeechSection: some View {
-        let download = guide.storyDownload
-        let running = download?.isRunning == true
-        let allSaved = savedStories.map { $0.saved == $0.total } ?? false
-        return Section {
-            LabeledContent(tr("Saved sentences", "Zapisane zdania"),
-                           value: "\(savedUsage.clips) · " + ByteCountFormatter.string(fromByteCount: savedUsage.bytes, countStyle: .file))
-            Button {
-                guide.downloadStories()
-            } label: {
-                HStack(spacing: 10) {
-                    Label {
-                        Text(downloadTitle(running: running, allSaved: allSaved))
-                    } icon: {
-                        Image(systemName: allSaved ? "checkmark.circle.fill" : "arrow.down.circle")
-                            .foregroundStyle(allSaved ? Theme.mintText : Theme.accent)
-                    }
-                    Spacer(minLength: 0)
-                    if running { ProgressView() }
-                }
-            }
-            .disabled(running || allSaved || savedStories == nil)
-            Button(tr("Delete saved speech", "Usuń zapisane nagrania"), role: .destructive) {
-                SpeechCache.shared.removeAll()
-                refreshSavedSpeech()
-            }
-            .disabled(savedUsage.clips == 0 || running)
-        } header: {
-            Text(tr("Saved speech", "Zapamiętane nagrania"))
-        } footer: {
-            VStack(alignment: .leading, spacing: 6) {
-                if let error = download?.error {
-                    Text(error).foregroundStyle(Theme.redText)
-                }
-                Text(tr("Each sentence is sent to ElevenLabs only once, then played from the phone, even without internet. Changing the voice, quality or speed records sentences again.",
-                        "Każde zdanie trafia do ElevenLabs tylko raz, potem gra z telefonu, także bez internetu. Po zmianie głosu, jakości albo tempa zdania nagrywają się od nowa."))
-            }
-        }
-    }
-
-    private func downloadTitle(running: Bool, allSaved: Bool) -> String {
-        if running, let download = guide.storyDownload {
-            return tr("Downloading stories… \(download.done)/\(download.total)", "Pobieram opowieści… \(download.done)/\(download.total)")
-        }
-        if allSaved { return tr("All exhibit stories are on the phone", "Wszystkie opowieści są w telefonie") }
-        if let stories = savedStories {
-            let missing = stories.total - stories.saved
-            return tr("Download exhibit stories now (\(missing))", "Pobierz opowieści teraz (\(missing))")
-        }
-        return tr("Download exhibit stories now", "Pobierz opowieści teraz")
-    }
-
-    /// Refreshes the numbers when a download moves on or the voice changes.
-    private var savedSpeechKey: String {
-        let download = guide.storyDownload
-        return "\(download?.done ?? -1)|\(download?.isRunning ?? false)|\(guide.voice.voiceID)|\(guide.voice.model.rawValue)|\(guide.voice.speed)|\(guide.voice.engine)"
-    }
-
-    private func refreshSavedSpeech() {
-        savedUsage = SpeechCache.shared.usage()
-        savedStories = guide.savedStoryCount()
+    private func speedName(_ speed: Float) -> String {
+        let percent = Int((speed * 100).rounded())
+        if speed < 0.95 { return tr("Slower (\(percent)%)", "Wolniej (\(percent)%)") }
+        if speed > 1.05 { return tr("Faster (\(percent)%)", "Szybciej (\(percent)%)") }
+        return tr("Normal", "Normalnie")
     }
 
     private var voiceStatus: String {
@@ -499,41 +418,25 @@ struct AdvancedSettingsView: View {
 
     private var serverSection: some View {
         Section {
-            TextField(Secrets.backendHost.isEmpty ? "192.168.1.20" : Secrets.backendHost, text: $serverDraft)
+            TextField(Secrets.backendURL, text: $serverDraft)
                 .autocorrectionDisabled()
                 #if os(iOS)
                 .textInputAutocapitalization(.never)
                 .keyboardType(.URL)
                 #endif
                 .onSubmit(saveServer)
-            Button(tr("Save and connect", "Zapisz i połącz"), action: saveServer)
-            LabeledContent(tr("Connection", "Połączenie")) {
-                Text(connectionText)
-                    .multilineTextAlignment(.trailing)
-            }
+            Button(tr("Save and reload beacons", "Zapisz i wczytaj beacony"), action: saveServer)
         } header: {
             Text(tr("Server", "Serwer"))
         } footer: {
-            Text(tr("The museum backend (login, guidance, alarm). Its IP is enough; port 8081 is assumed. Empty = BACKEND_HOST from Secrets.plist. Now: ",
-                    "Backend muzeum (logowanie, prowadzenie, alarm). Wystarczy IP, domyślnie port 8081. Puste = BACKEND_HOST z Secrets.plist. Teraz: ")
+            Text(tr("Your team's backend for logging in and the beacon positions. Empty = \(Secrets.backendURL). Now: ",
+                    "Backend zespołu: logowanie i pozycje beaconów. Puste = \(Secrets.backendURL). Teraz: ")
                  + (account.serverURL?.absoluteString ?? tr("not set", "nie ustawiono")) + ".")
-        }
-    }
-
-    private var connectionText: String {
-        let server = guide.server
-        switch server.state {
-        case .online: return tr("Connected", "Połączono")
-        case .connecting: return tr("Connecting…", "Łączę…")
-        case .noServer: return tr("No server: local data", "Brak serwera: dane lokalne")
-        case .off: return tr("Paused", "Wstrzymane")
-        case .offline: return tr("Local data. ", "Dane lokalne. ") + (server.problem ?? "")
         }
     }
 
     private func saveServer() {
         account.serverOverride = serverDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guide.server.reconnect()
         Task { await guide.positioning.loadDirectory(using: account.backend) }
     }
 
@@ -545,6 +448,9 @@ struct AdvancedSettingsView: View {
             LabeledContent(tr("Known beacons", "Znane beacony"), value: "\(guide.positioning.directory.beacons.count)")
             NavigationLink(tr("What the phone hears", "Co słyszy telefon")) {
                 BeaconsView(positioning: guide.positioning)
+            }
+            NavigationLink(tr("Beacon layout and steps", "Układ beaconów i kroki")) {
+                BeaconLayoutView(positioning: guide.positioning)
             }
             Button(guide.positioning.isLoadingDirectory ? tr("Loading…", "Wczytuję…") : tr("Reload beacon positions", "Wczytaj pozycje beaconów")) {
                 Task { await guide.positioning.loadDirectory(using: account.backend) }
@@ -612,15 +518,15 @@ struct AdvancedSettingsView: View {
 
     private var routeSection: some View {
         Section {
-            LabeledContent(tr("Guidance now", "Prowadzenie teraz"),
-                           value: guide.routeSource == .server ? tr("From the server", "Z serwera") : tr("From the map on the phone", "Z mapy w telefonie"))
-            LabeledContent(tr("Map on the phone", "Mapa w telefonie"),
-                           value: MuseumGrid.shared != nil ? tr("Ready", "Gotowa") : tr("Missing", "Brak pliku"))
+            LabeledContent(tr("Route service", "Serwis tras"), value: Secrets.routeAPIURL?.host() ?? tr("Not set", "Nie ustawiono"))
         } header: {
             Text(tr("Routes", "Trasy"))
         } footer: {
-            Text(tr("Routes come from the server step by step (it knows about closed areas and the alarm). If it's down or answers with errors, the phone plans the route itself on its copy of the same map, avoiding the closed areas it last heard about.",
-                    "Trasy przychodzą z serwera krok po kroku (zna zamknięte strefy i alarm). Gdy serwer nie działa albo zwraca błędy, telefon sam wyznacza trasę na swojej kopii tej samej mapy, omijając ostatnio znane zamknięte strefy."))
+            Text(Secrets.routeAPIURL == nil
+                 ? tr("Without a route service the bloops lead in a straight line. Set ROUTE_API_URL in Secrets.plist to use walking routes.",
+                      "Bez serwisu tras dźwięki prowadzą w linii prostej. Ustaw ROUTE_API_URL w Secrets.plist, żeby używać tras.")
+                 : tr("Walking routes come from your route service. Until one arrives, the bloops lead in a straight line.",
+                      "Trasy przychodzą z Twojego serwisu. Zanim przyjdą, dźwięki prowadzą w linii prostej."))
         }
     }
 
@@ -684,48 +590,6 @@ struct BeaconsView: View {
 }
 
 /// An icon in a coloured rounded square, a title and an optional value (like Settings on iPhone).
-/// One way to explore (with the map / just listening) as a big card: picture-like icon, name, one line about it.
-private struct ModeCard: View {
-    let mode: UserMode
-    let isSelected: Bool
-    var action: () -> Void
-
-    private var tint: Color { mode == .blind ? Theme.coral : Theme.accent }
-
-    var body: some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .top) {
-                    Image(systemName: mode.systemImage)
-                        .font(.system(size: 26, weight: .semibold))
-                        .foregroundStyle(isSelected ? Color.white : tint)
-                        .frame(width: 54, height: 54)
-                        .background(RoundedRectangle(cornerRadius: 15, style: .continuous).fill(isSelected ? tint : tint.opacity(0.14)))
-                    Spacer(minLength: 0)
-                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                        .font(.title2)
-                        .foregroundStyle(isSelected ? tint : Theme.line)
-                }
-                Text(mode.title)
-                    .font(Theme.bodyBold)
-                    .foregroundStyle(Theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text(mode.cardDetail)
-                    .font(Theme.small)
-                    .foregroundStyle(Theme.inkSoft)
-                    .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 0)
-            }
-            .frame(maxWidth: .infinity, minHeight: 160, alignment: .topLeading)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(CardButtonStyle(padding: 14, fill: isSelected ? tint.opacity(0.08) : Theme.card,
-                                     highlight: isSelected ? tint : nil))
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
-    }
-}
-
 struct SettingsRow: View {
     var title: String
     var systemImage: String

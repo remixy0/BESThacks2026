@@ -25,7 +25,12 @@ struct CalibrationView: View {
 
     /// Where to stand, in the app's language (custom spots from the server keep their own words).
     private var spotName: String {
-        switch spot.name {
+        if guide.positioning.usesLayout {
+            let layout = guide.positioning.layout
+            return tr("the calibration point in your room (x \(BeaconLayoutView.metres(layout.calibrationX)) m, y \(BeaconLayoutView.metres(layout.calibrationY)) m)",
+                      "punkcie kalibracji w pokoju (x \(BeaconLayoutView.metres(layout.calibrationX)) m, y \(BeaconLayoutView.metres(layout.calibrationY)) m)")
+        }
+        return switch spot.name {
         case CalibrationSpot.southEntrance.name: tr(spot.name, "znaczniku startowym tuż za Wejściem Południowym")
         case "the calibration marker": tr(spot.name, "znaczniku kalibracyjnym")
         default: spot.name
@@ -33,7 +38,8 @@ struct CalibrationView: View {
     }
 
     private var spotFacing: String {
-        switch spot.facing {
+        if guide.positioning.usesLayout { return guide.positioning.layout.facing.title.lowercased() }
+        return switch spot.facing {
         case CalibrationSpot.southEntrance.facing: tr(spot.facing, "w stronę dużej hali i Pali Totemicznych")
         case "the way the arrow on the marker points": tr(spot.facing, "w kierunku strzałki na znaczniku")
         default: spot.facing
@@ -91,7 +97,8 @@ struct CalibrationView: View {
 
             VStack(alignment: .leading, spacing: 10) {
                 StepRow(number: 1, text: tr("Stand on \(spotName).", "Stań na \(spotName)."))
-                StepRow(number: 2, text: tr("Put your AirPods in and face \(spotFacing).", "Załóż AirPodsy i zwróć się \(spotFacing)."))
+                StepRow(number: 2, text: tr("Put your AirPods in and face \(spotFacing), holding the phone in front of you, pointing the same way.",
+                                            "Załóż AirPodsy i zwróć się \(spotFacing), trzymając telefon przed sobą, skierowany tak samo."))
                 StepRow(number: 3, text: tr("Tap Calibrate and hold still for 3 seconds.", "Stuknij „Kalibruj” i nie ruszaj się przez 3 sekundy."))
             }
 
@@ -160,6 +167,19 @@ struct CalibrationView: View {
     private var beaconDetail: String {
         let positioning = guide.positioning
         if let problem = positioning.scanner.problem { return problem }
+        if positioning.usesLayout {
+            let layout = positioning.layout
+            if layout.beacons.isEmpty {
+                return tr("Your beacon layout is on but has no beacons. Add them in Settings › Beacon layout.",
+                          "Twój układ beaconów jest włączony, ale nie ma w nim beaconów. Dodaj je w Ustawieniach › Układ beaconów.")
+            }
+            if positioning.beaconsHeard == 0, !positioning.unknownBeacons.isEmpty {
+                return tr("Beacons heard (\(positioning.unknownBeacons.joined(separator: ", "))), but they aren't in your layout.",
+                          "Słychać beacony (\(positioning.unknownBeacons.joined(separator: ", "))), ale nie ma ich w Twoim układzie.")
+            }
+            return tr("Your layout: \(layout.beacons.count) beacons. Stand at x \(BeaconLayoutView.metres(layout.calibrationX)), y \(BeaconLayoutView.metres(layout.calibrationY)) in the room, facing \(layout.facing.title.lowercased()).",
+                      "Twój układ: beacony \(layout.beacons.count). Stań w punkcie x \(BeaconLayoutView.metres(layout.calibrationX)), y \(BeaconLayoutView.metres(layout.calibrationY)), kierunek: \(layout.facing.title.lowercased()).")
+        }
         if positioning.directory.beacons.isEmpty {
             return positioning.directoryError ?? tr("The beacon positions haven't loaded from the server yet.",
                                                     "Pozycje beaconów jeszcze nie przyszły z serwera.")

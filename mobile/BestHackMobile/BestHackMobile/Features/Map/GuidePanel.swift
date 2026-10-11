@@ -170,38 +170,35 @@ struct ExploreCard: View {
     }
 }
 
-/// The "Talk" button: tap and say what you want ("opowiedz", "dalej", an exhibit's name…). Big enough to hit
-/// without looking; while listening it turns solid and says so.
+/// A microphone button: tap and say what you want ("opowiedz", "dalej", an exhibit's name…).
 struct VoiceButton: View {
     let guide: GuideModel
     let visits: VisitLog
 
     var body: some View {
-        let busy = guide.voiceInput.isBusy
         Button {
             if guide.voiceInput.state == .listening {
                 guide.voiceInput.finishListening()
-            } else if !busy {
+            } else if !guide.voiceInput.isBusy {
                 Task { await runMapVoice(guide: guide, visits: visits) }
             }
         } label: {
             HStack(spacing: 8) {
-                Image(systemName: busy ? "waveform" : "mic.fill")
-                    .font(.system(size: 20, weight: .semibold))
-                    .symbolEffect(.pulse, isActive: busy)
-                Text(busy ? tr("Listening", "Słucham") : tr("Talk", "Mów"))
-                    .font(Theme.bodyBold)
+                Image(systemName: guide.voiceInput.isBusy ? "waveform" : "mic.fill")
+                    .font(.system(size: 20, weight: .bold))
+                    .symbolEffect(.pulse, isActive: guide.voiceInput.isBusy)
+                Text(guide.voiceInput.state == .listening ? tr("Done", "Gotowe") : tr("Talk", "Mów"))
+                    .font(.system(.headline, weight: .heavy))
                     .lineLimit(1)
                     .fixedSize()
             }
-            .foregroundStyle(busy ? Color.white : Theme.coralText)
+            .foregroundStyle(.white)
             .padding(.horizontal, 18)
-            .frame(minHeight: 50)
-            .background(Capsule().fill(busy ? Theme.accent : Theme.card))
-            .overlay(Capsule().strokeBorder(busy ? Color.clear : Theme.coral.opacity(0.6), lineWidth: 1.5))
+            .frame(minWidth: 96, minHeight: 48)
+            .background(Capsule().fill(Theme.coral))
             .contentShape(Capsule())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressableStyle())
         .accessibilityLabel(tr("Talk to the guide", "Mów do przewodnika"))
         .accessibilityHint(tr("Say for example: tell me, next, or an exhibit's name", "Powiedz na przykład: opowiedz, dalej albo nazwę eksponatu"))
     }
@@ -261,7 +258,7 @@ struct StopSpeakingButton: View {
         } label: {
             Image(systemName: "speaker.slash.fill")
         }
-        .buttonStyle(RoundIconButtonStyle(tint: Theme.redText, size: 44))
+        .buttonStyle(RoundIconButtonStyle(tint: Theme.redText, size: 36))
         .accessibilityLabel(tr("Stop speaking", "Przestań mówić"))
     }
 }

@@ -25,8 +25,6 @@ struct ListenModeView: View {
     @State private var lastAnnouncedPosition = SIMD2<Float>(repeating: .infinity)
     /// Listen once the guide stops talking (after the options or a choice were read out).
     @State private var listenWhenQuiet = false
-    /// New options are waiting to be read out until this screen is in front again (Settings was open).
-    @State private var announceWhenShown = false
 
     /// The four corners: where on the screen, and a colour you can tell apart easily (black text on all of them).
     private struct Corner {
@@ -58,28 +56,14 @@ struct ListenModeView: View {
         .background(Color.black.ignoresSafeArea())
         .environment(\.colorScheme, .dark)
         .onAppear {
-            // Registered first, so what's read out below belongs to this screen.
-            guide.screenAppeared(.listen)
-            offerChoices(queued: guide.audio.isSpeaking)
-        }
-        .onDisappear {
-            guide.screenDisappeared(.listen)
-        }
-        // Sound follows the screen: Settings opened on top → nothing here talks or listens; back in front → catch up.
-        .onChange(of: guide.screen) { _, screen in
-            if screen == .listen {
-                if announceWhenShown {
-                    announceWhenShown = false
-                    announceChoices(queued: guide.audio.isSpeaking)
-                }
-            } else {
-                listenWhenQuiet = false
-            }
+            refreshChoices()
+            announceChoices(queued: guide.audio.isSpeaking)
         }
         .onChange(of: guide.target?.key) { old, new in
             // Guidance ended (stopped or arrived): offer four new exhibits, after the arrival story.
             if old != nil, new == nil {
-                offerChoices(queued: true)
+                refreshChoices()
+                announceChoices(queued: true)
             }
             stopArmedSince = nil
             pending = nil
@@ -87,17 +71,18 @@ struct ListenModeView: View {
         .onChange(of: guide.arrivalEvent) { _, _ in
             // "You're already at…" (no guidance started): offer the next ones after the story.
             if guide.target == nil {
-                offerChoices(queued: true)
+                refreshChoices()
+                announceChoices(queued: true)
             }
         }
         .onChange(of: guide.speechFinishedEvent) { _, _ in
-            guard listenWhenQuiet, guide.target == nil, guide.screen == .listen else { return }
+            guard listenWhenQuiet, guide.target == nil else { return }
             listenWhenQuiet = false
             Task { await listenAndAct() }
         }
-        // You said the wake phrase ("Hej przewodniku"): listen for the command.
-        .onChange(of: guide.wakeWord.heardEvent) { _, _ in
-            guard guide.screen == .listen else { return }
+        // "Hej Bloop": listen for a command right away.
+        .onChange(of: guide.wakeEvent) { _, _ in
+            guard !guide.voiceInput.isBusy else { return }
             listenWhenQuiet = false
             Haptics.shared.selected()
             Task { await listenAndAct() }
@@ -111,10 +96,7 @@ struct ListenModeView: View {
 
     private var menuBar: some View {
         HStack(spacing: 10) {
-            Button {
-                guide.userTapped()
-                onSettings()
-            } label: {
+            Button(action: onSettings) {
                 Label(tr("Settings", "Ustawienia"), systemImage: "gearshape.fill")
                     .font(.headline)
                     .foregroundStyle(.white)
@@ -157,16 +139,9 @@ struct ListenModeView: View {
         let isPending = exhibit != nil && exhibit?.key == pending
         let dimmed = pending != nil && !isPending
 
-        return ZStack {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(exhibit == nil ? Color(white: 0.16) : corner.color)
-            if isPending {
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .strokeBorder(Color.white, lineWidth: 8)
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .strokeBorder(Color.black, lineWidth: 4)
-                    .padding(8)
-            }
+        let shape = RoundedRectangle(cornerRadius: 22, style: .continuous)
+
+        return VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 8) {
                 Text(corner.name.uppercased())
                     .font(.caption.weight(.heavy))
@@ -174,30 +149,14 @@ struct ListenModeView: View {
                 if let exhibit {
                     Text(exhibit.name)
                         .font(.system(.title2, weight: .heavy))
-                        .lineLimit(4)
+                        .lineLimit(isPending ? 2 : 4)
                         .minimumScaleFactor(0.6)
                     Text(guide.directions(to: exhibit))
                         .font(.headline)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                     Spacer(minLength: 0)
-                    if isPending {
-                        // The "confirm" button: full width of the corner, text wraps instead of being cut off.
-                        HStack(spacing: 8) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.title3.weight(.bold))
-                            Text(tr("Tap again to go", "Stuknij ponownie, żeby iść"))
-                                .font(.headline.weight(.heavy))
-                                .lineLimit(3)
-                                .minimumScaleFactor(0.8)
-                                .multilineTextAlignment(.leading)
-                                .fixedSize(horizontal: false, vertical: true)
-                            Spacer(minLength: 0)
-                        }
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 10)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.black))
-                    } else if visits.contains(exhibit.key) {
+                    if !isPending, visits.contains(exhibit.key) {
                         Label(tr("Visited", "Odwiedzony"), systemImage: "checkmark.circle.fill")
                             .font(.subheadline.weight(.bold))
                     }
@@ -210,15 +169,25 @@ struct ListenModeView: View {
             .foregroundStyle(exhibit == nil ? Color(white: 0.6) : Color.black)
             .padding(16)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+            // Chosen: a solid black band across the bottom says what to do next (the text always fits).
+            if isPending {
+                ConfirmBand()
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .background(shape.fill(exhibit == nil ? Color(white: 0.16) : corner.color))
+        .clipShape(shape)
+        .overlay {
+            if isPending {
+                shape.strokeBorder(Color.white, lineWidth: 6)
+            }
         }
         .opacity(dimmed ? 0.45 : 1)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .contentShape(Rectangle())
         .onTapGesture { tapCorner(index) }
-        .onLongPressGesture(minimumDuration: 0.7) {
-            guide.userTapped()
-            repeatChoices()
-        }
+        .onLongPressGesture(minimumDuration: 0.7) { repeatChoices() }
         .animation(.easeOut(duration: 0.15), value: pending)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(exhibit.map { "\(corner.name). \($0.name). \(guide.directions(to: $0))." } ?? "\(corner.name). " + tr("Nothing here.", "Pusto."))
@@ -230,8 +199,6 @@ struct ListenModeView: View {
     }
 
     private func tapCorner(_ index: Int) {
-        // The tap wins: stop talking and drop a half-said command, then answer this tap.
-        guide.userTapped()
         let corner = corners[index]
         guard index < choices.count else {
             Haptics.shared.warning()
@@ -243,6 +210,7 @@ struct ListenModeView: View {
 
     /// First choice: buzz and ask to confirm. Same choice again: go.
     private func choose(_ exhibit: MuseumInfo.Exhibit, corner: Corner?) {
+        if guide.voiceInput.state == .listening { guide.voiceInput.finishListening() }
         if pending == exhibit.key, Date().timeIntervalSince(pendingSince) < 20 {
             confirm(exhibit)
         } else {
@@ -269,16 +237,6 @@ struct ListenModeView: View {
         // Moved since the options were made? Then offer the closest ones again.
         if simd_distance(lastAnnouncedPosition, guide.position) > 4 { refreshChoices() }
         announceChoices(queued: false)
-    }
-
-    /// New options: read them out now if this screen is in front, otherwise once it is again.
-    private func offerChoices(queued: Bool) {
-        refreshChoices()
-        if guide.screen == .listen {
-            announceChoices(queued: queued)
-        } else {
-            announceWhenShown = true
-        }
     }
 
     private func refreshChoices() {
@@ -361,22 +319,32 @@ struct ListenModeView: View {
     /// The strip along the bottom: tap to talk (white, so it's easy to find and different from the corners).
     private var talkStrip: some View {
         let state = guide.voiceInput.state
-        return HStack(spacing: 12) {
+        return HStack(spacing: 16) {
             Image(systemName: state == .idle ? "mic.fill" : (state == .listening ? "waveform" : "ellipsis"))
-                .font(.system(size: 34, weight: .bold))
+                .font(.system(size: 38, weight: .bold))
+                .frame(width: 48)
                 .symbolEffect(.pulse, isActive: state != .idle)
-            Text(state == .idle ? tr("Talk", "Mów") : (state == .listening ? tr("Listening…", "Słucham…") : tr("Recognizing…", "Rozpoznaję…")))
-                .font(.system(.title, weight: .heavy))
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(state == .idle ? tr("Talk", "Mów") : (state == .listening ? tr("Listening…", "Słucham…") : tr("Recognizing…", "Rozpoznaję…")))
+                    .font(.system(.largeTitle, weight: .heavy))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                if state == .idle, guide.wakeWordEnabled {
+                    Text(tr("or say “\(guide.wakePhrase)”", "albo powiedz „\(guide.wakePhrase)”"))
+                        .font(.headline)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                }
+            }
             Spacer(minLength: 0)
             if state == .listening {
                 LevelBars(level: guide.voiceInput.recorder.level, color: .black)
+                    .scaleEffect(1.4)
             }
         }
         .foregroundStyle(.black)
         .padding(.horizontal, 24)
-        .frame(maxWidth: .infinity, minHeight: 108)
+        .frame(maxWidth: .infinity, minHeight: 120)
         .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(state == .idle ? Color.white : Color(hex: 0xFFE9A8)))
         .contentShape(Rectangle())
         .onTapGesture { talkTapped() }
@@ -464,22 +432,41 @@ struct ListenModeView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(color))
         .contentShape(Rectangle())
-        .onTapGesture {
-            guide.userTapped()
-            onTap()
-        }
-        .onLongPressGesture(minimumDuration: 0.7) {
-            guide.userTapped()
-            onHold()
-        }
+        .onTapGesture(perform: onTap)
+        .onLongPressGesture(minimumDuration: 0.7, perform: onHold)
         .animation(.easeOut(duration: 0.2), value: title)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibility)
         .accessibilityHint(hint)
         .accessibilityAddTraits(.isButton)
-        .accessibilityAction {
-            guide.userTapped()
-            onTap()
+        .accessibilityAction { onTap() }
+    }
+}
+
+/// The black band at the bottom of a chosen corner: "Tap again / or say yes". Short words, scaled to fit,
+/// so it never spills out of a narrow corner.
+private struct ConfirmBand: View {
+    var body: some View {
+        VStack(spacing: 2) {
+            HStack(spacing: 8) {
+                Image(systemName: "hand.tap.fill")
+                    .font(.system(size: 22, weight: .bold))
+                Text(tr("Tap again", "Stuknij ponownie"))
+                    .font(.system(.title3, weight: .heavy))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+            }
+            Text(tr("or say “yes”", "lub powiedz „tak”"))
+                .font(.subheadline.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .opacity(0.85)
         }
+        .foregroundStyle(.white)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .padding(.horizontal, 10)
+        .background(Color.black)
+        .accessibilityHidden(true)
     }
 }

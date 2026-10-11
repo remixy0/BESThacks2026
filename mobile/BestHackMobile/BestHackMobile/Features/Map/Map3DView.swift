@@ -53,10 +53,11 @@ struct Map3DView: View {
     var body: some View {
         let _ = settleTick
         GeometryReader { geo in
-            let goal = cameraGoal(size: geo.size)
-            let settled = rig.isSettled(at: goal)
+            // The goal is worked out again every frame (with the AirPods read live), so the view turns the moment
+            // your head does. The observed values it reads wake the frame loop when something moves.
+            let settled = rig.isSettled(at: cameraGoal(size: geo.size))
             TimelineView(.animation(minimumInterval: 1.0 / 60, paused: settled)) { timeline in
-                let _ = advance(toward: goal, at: timeline.date)
+                let _ = advance(toward: cameraGoal(size: geo.size), at: timeline.date)
                 ZStack {
                     RealityView { content in
                         content.camera = .virtual
@@ -162,21 +163,27 @@ struct Map3DView: View {
     }
 
     private func cameraGoal(size: CGSize) -> CameraGoal {
+        // Read the observed head values first (they wake the frame loop), then prefer the live AirPods reading.
+        let observedFacing = guide.facingYaw
+        let observedPitch = guide.headPitch
+        let observedHeading = guide.mapHeading
+        let live = guide.liveHead()
         if style == .eyeLevel {
             // Your AirPods steer the view, left-right and up-down. Without them: along the route, or north.
-            let facing = guide.facingYaw ?? routeYaw ?? 0
+            let facing = live?.yaw ?? observedFacing ?? routeYaw ?? 0
             // Tilt down a little so the horizon sits in the upper part of the visible area: you see the floor,
             // the route and the exhibits ahead above the card.
             let half = Float(max(size.height, 1)) / 2
             let horizonFromMiddle = Float(visibleLift(size)) + Float(max(size.height - covered.top - covered.bottom, 100)) * 0.18
             let pitch = atan(horizonFromMiddle / half * tan(MapCameraRig.fieldOfView / 2))
             // Looking up tilts the camera up (pitch here is "below the horizon", so it goes down).
-            return CameraGoal(focus: guide.position, distance: 2, pitch: min(max(pitch - guide.headPitch, -0.9), 1.1),
+            let headPitch = live?.pitch ?? observedPitch
+            return CameraGoal(focus: guide.position, distance: 2, pitch: min(max(pitch - headPitch, -0.9), 1.1),
                               bearing: facing, eyeLevel: 1)
         }
-        // The map turns with your head (with a small deadband); north up without calibrated AirPods.
+        // The map turns with your head, live; north up without calibrated AirPods.
         // Dragged away: it holds still where you put it.
-        let heading = heldBearing ?? guide.mapHeading ?? 0
+        let heading = heldBearing ?? live?.yaw ?? observedHeading ?? 0
         let center = centered(guide.position + panOffset, bearing: heading, distance: distance, size: size)
         return CameraGoal(focus: center, distance: distance, pitch: overviewPitch(distance), bearing: heading, eyeLevel: 0)
     }
@@ -198,7 +205,7 @@ struct Map3DView: View {
             eyeLevel: rig.current.eyeLevel,
             distance: rig.current.distance,
             user: guide.position,
-            facing: guide.facingYaw,
+            facing: guide.liveHead()?.yaw ?? guide.facingYaw,
             route: guide.route,
             routeVersion: guide.routeVersion,
             highlighted: guide.target?.key ?? guide.preview?.key ?? guide.faced?.key

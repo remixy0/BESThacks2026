@@ -5,8 +5,7 @@
 // ===================== CONFIGURE PER BEACON =====================
 
 // 1, 2 or 3 (any value 1..65535). Must be unique per board.
-#define BEACON_ID 1
-
+#define BEACON_ID 4
 // Shared by ALL beacons. Use the exact same string in the iOS app.
 static const char *BEACON_UUID = "DFB76639-2B31-46CB-AAD1-63470563632E";
 

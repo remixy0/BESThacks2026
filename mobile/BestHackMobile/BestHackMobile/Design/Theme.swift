@@ -83,35 +83,8 @@ extension Color {
 
 // MARK: - Buttons
 
-/// A button was tapped. The guide hooks in here (`GuideModel.userTapped`) and stops talking, so speech never runs
-/// on past a tap or over the next screen. The app's button styles call it just before the button's own action.
-enum UserTap {
-    static var onTap: (() -> Void)?
-
-    static func happened() {
-        onTap?()
-    }
-}
-
-/// Wraps a button so a tap first silences the guide (`UserTap`), then runs the button's action, drawn with `face`.
-private struct InterruptingButton<Face: ButtonStyle>: View {
-    let configuration: PrimitiveButtonStyleConfiguration
-    let face: Face
-
-    var body: some View {
-        Button(role: configuration.role) {
-            UserTap.happened()
-            configuration.trigger()
-        } label: {
-            configuration.label
-        }
-        .buttonStyle(face)
-    }
-}
-
 /// The app's button: a flat rounded shape that dims and shrinks a little while pressed.
-/// Tapping it stops the guide talking first (see `UserTap`).
-struct AppButtonStyle: PrimitiveButtonStyle {
+struct AppButtonStyle: ButtonStyle {
     enum Kind {
         case primary          // accent, white text
         case secondary        // card with a thin outline, accent text
@@ -123,16 +96,6 @@ struct AppButtonStyle: PrimitiveButtonStyle {
     var kind: Kind = .primary
     var fullWidth = true
     var height: CGFloat = 52
-
-    func makeBody(configuration: Configuration) -> some View {
-        InterruptingButton(configuration: configuration, face: AppButtonFace(kind: kind, fullWidth: fullWidth, height: height))
-    }
-}
-
-private struct AppButtonFace: ButtonStyle {
-    let kind: AppButtonStyle.Kind
-    let fullWidth: Bool
-    let height: CGFloat
 
     func makeBody(configuration: Configuration) -> some View {
         AppButtonBody(configuration: configuration, kind: kind, fullWidth: fullWidth, height: height)
@@ -183,21 +146,11 @@ private struct AppButtonBody: View {
     }
 }
 
-/// A round icon button (settings, close, stop speaking…). Tapping it stops the guide talking first.
-struct RoundIconButtonStyle: PrimitiveButtonStyle {
+/// A round icon button (settings, close, stop speaking…).
+struct RoundIconButtonStyle: ButtonStyle {
     var tint: Color = Theme.accentText
     var size: CGFloat = 44
     var filled = false
-
-    func makeBody(configuration: Configuration) -> some View {
-        InterruptingButton(configuration: configuration, face: RoundIconButtonFace(tint: tint, size: size, filled: filled))
-    }
-}
-
-private struct RoundIconButtonFace: ButtonStyle {
-    let tint: Color
-    let size: CGFloat
-    let filled: Bool
 
     func makeBody(configuration: Configuration) -> some View {
         let pressed = configuration.isPressed
@@ -209,6 +162,17 @@ private struct RoundIconButtonFace: ButtonStyle {
             .overlay(Circle().strokeBorder(filled ? Color.clear : Theme.line, lineWidth: 1))
             .contentShape(Circle())
             .scaleEffect(pressed ? 0.93 : 1)
+            .animation(.easeOut(duration: 0.12), value: pressed)
+    }
+}
+
+/// Leaves the label as drawn and only shrinks it a little while pressed.
+struct PressableStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        let pressed = configuration.isPressed
+        configuration.label
+            .scaleEffect(pressed ? 0.94 : 1)
+            .opacity(pressed ? 0.9 : 1)
             .animation(.easeOut(duration: 0.12), value: pressed)
     }
 }
@@ -230,21 +194,11 @@ struct CardModifier: ViewModifier {
     }
 }
 
-/// A card you can tap. Tapping it stops the guide talking first.
-struct CardButtonStyle: PrimitiveButtonStyle {
+/// A card you can tap.
+struct CardButtonStyle: ButtonStyle {
     var padding: CGFloat = 12
     var fill: Color = Theme.card
     var highlight: Color? = nil
-
-    func makeBody(configuration: Configuration) -> some View {
-        InterruptingButton(configuration: configuration, face: CardButtonFace(padding: padding, fill: fill, highlight: highlight))
-    }
-}
-
-private struct CardButtonFace: ButtonStyle {
-    let padding: CGFloat
-    let fill: Color
-    let highlight: Color?
 
     func makeBody(configuration: Configuration) -> some View {
         let pressed = configuration.isPressed

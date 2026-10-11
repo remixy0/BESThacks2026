@@ -65,7 +65,7 @@ final class MapCameraRig {
         simd_distance(current.focus, goal.focus) < 0.02
             && abs(current.distance - goal.distance) < 0.05
             && abs(current.pitch - goal.pitch) < 0.002
-            && abs(MuseumGeometry.wrap(current.bearing - goal.bearing)) < 0.002
+            && abs(MuseumGeometry.wrap(current.bearing - goal.bearing)) < 0.005
             && abs(current.eyeLevel - goal.eyeLevel) < 0.002
     }
 
@@ -82,8 +82,10 @@ final class MapCameraRig {
         current.focus += (goal.focus - current.focus) * ease(current.eyeLevel > 0.5 ? 12 : 7)
         let logDistance = log(max(current.distance, 1)) + (log(max(goal.distance, 1)) - log(max(current.distance, 1))) * ease(8)
         current.distance = exp(logDistance)
-        current.pitch += (goal.pitch - current.pitch) * ease(7)
-        current.bearing = MuseumGeometry.wrap(current.bearing + MuseumGeometry.wrap(goal.bearing - current.bearing) * ease(current.eyeLevel > 0.5 ? 10 : 7))
+        // Turning and tilting follow the AirPods closely (their data is already smooth): a short ease only hides
+        // the gaps between their ~25 updates a second.
+        current.pitch += (goal.pitch - current.pitch) * ease(current.eyeLevel > 0.5 ? 18 : 9)
+        current.bearing = MuseumGeometry.wrap(current.bearing + MuseumGeometry.wrap(goal.bearing - current.bearing) * ease(current.eyeLevel > 0.5 ? 24 : 16))
         if isSettled(at: goal) {
             current = goal
         }
