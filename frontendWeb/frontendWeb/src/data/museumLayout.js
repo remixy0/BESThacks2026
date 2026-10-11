@@ -1,10 +1,11 @@
 // Oficjalne dane Field Museum — Main Level (1:1 z field-museum-main-level.grid.json)
-// Zawiera WSZYSTKIE obiekty: 25 Points of Interest, 84 Drzwi, 30 Sal.
+// Zaktualizowano z: field-museum-main-level.grid (1).json
+// Zawiera: 25 Points of Interest, 84 Drzwi, 33 Sal.
 
 export const MUSEUM_METADATA = {
   "schemaVersion": 1,
   "id": "field-museum-main-level",
-  "name": "Field Museum — Main Level",
+  "name": "Field Museum",
   "subtitle": "Chicago, IL • Plan Piętra Głównego (2D)",
   "units": "metres",
   "cellSizeM": 0.2,
@@ -43,27 +44,71 @@ export const MUSEUM_METADATA = {
     "stepCostM": 0.2,
     "diagonalMoves": false,
     "pedestrianRadiusM": 0.3,
+    "clearanceM": 1,
     "collisionHeightM": [
       0.02,
       1.9
     ],
     "rasterSubcellM": 0.05,
-    "clearancePolicy": "conservative cell dilation: radius + full cell diagonal",
+    "clearancePolicy": "free cells whose centre is closer than 1 m to any obstacle surface (walls, columns, display cases, exhibits), a closed room or the outside are clearance_buffer (4); every walkable cell centre is at least that far away",
     "componentPolicy": "largest connected component only; other free cells code 5",
     "mapAlignmentRequired": true,
     "start": {
-      "column": 530,
-      "row": 600,
-      "x": -0.5,
-      "y": 51.9,
+      "column": 533,
+      "row": 620,
+      "x": 0.1,
+      "y": 55.9,
       "distanceToAnchorM": 0.141
     }
   },
   "source": {
-    "model": "FieldMuseum_MainLevel.usdz",
-    "modelSha256": "3a8e9583db5aab018bd7357d98951310472807bad85642f7bd30800f01c240f7",
+    "model": "MuseumMap.usdz",
+    "modelSha256": "19e079fb08c15bf2f7ff6e91326c574e54e205ac9250a60a55069d340506d679",
+    "exhibitModels": [
+      {
+        "key": "maximo",
+        "model": "Artifacts/Maximo.usdz",
+        "sha256": "0565f74eaec4b18b7206b610aefc45085aba9ba0a06485a14270fbc220f9755c"
+      },
+      {
+        "key": "elephants",
+        "model": "Artifacts/FightingElephants.usdz",
+        "sha256": "9ab1fbb10d194a8deb397f585c6640d722d6b4ac1ec3bdc3cde90b9ce138caab"
+      },
+      {
+        "key": "totems",
+        "model": "Artifacts/TotemPoles.usdz",
+        "sha256": "ed12e32942d0a3525ae5f461fde7e2abbfc24857f97d37d77e7a3da7702d83e8"
+      },
+      {
+        "key": "tsavo_lions",
+        "model": "Artifacts/TsavoLions.usdz",
+        "sha256": "6fc92b15c9e6e46f58a3f99e22c2313673b45701d461c0f1de3fee5d9d0bd1ee"
+      },
+      {
+        "key": "seabirds",
+        "model": "Artifacts/Seabirds.usdz",
+        "sha256": "249abdcaeadf422ee4f831572d01723825fc1d2b4f3765539668daa638263786"
+      },
+      {
+        "key": "mask",
+        "model": "Artifacts/GreenstoneMask.usdz",
+        "sha256": "5f9af68a1c74f3abd92f63a79fe7d4cfb14a83a79c1692f89d2d0368e395b588"
+      },
+      {
+        "key": "pawnee_lodge",
+        "model": "Artifacts/PawneeEarthLodge.usdz",
+        "sha256": "4486876c11f5044f787f62e8f807524f9ec9c28a6c868309db44b2a9fd0633b6"
+      },
+      {
+        "key": "mastaba",
+        "model": "Artifacts/Mastaba.usdz",
+        "sha256": "f01712cad44eb3cf4e1e52a75fe42cbb0ecd44345b052e109d543f15b6e5e48a"
+      }
+    ],
     "info": "FieldMuseum_MainLevel_info.json",
-    "infoSha256": "707743e1948290df53982088754820cd2e9b04e93228b9ba63270faa8e2134a5",
+    "infoSha256": "b235a19680ec45232464fdacba9561f1c6b07c1ac56f720e9850a50cad61fb8f",
+    "generator": "resources/tools/build_grid.py",
     "credit": "Floor-plan data © 2020 Field Museum of Natural History, CC BY 4.0",
     "url": "https://github.com/arcataroger/openlayers_indoor_map",
     "limitation": "Procedural reconstruction; walls, doors and furniture approximate reality."
@@ -107,8 +152,8 @@ export const ROOMS = [
     "status": "open",
     "points": "379.4,311.9 378.4,440.3 80.6,440.4 80.6,371.3 121.9,371.2 121.8,312.1",
     "center": {
-      "x": 238.5,
-      "y": 378.5
+      "x": 230,
+      "y": 376.1
     }
   },
   {
@@ -125,10 +170,10 @@ export const ROOMS = [
     "id": "reptiles",
     "name": "Reptiles",
     "status": "open",
-    "points": "228.5,440.3 316,440.3 316,500.3 228.5,500.4",
+    "points": "228.5,440.3 316.0,440.3 316.0,500.3 228.5,500.4",
     "center": {
-      "x": 272.2,
-      "y": 470.3
+      "x": 272.3,
+      "y": 470.4
     }
   },
   {
@@ -145,20 +190,20 @@ export const ROOMS = [
     "id": "mammals_4",
     "name": "Mammals of Africa",
     "status": "open",
-    "points": "80.7,594.2 5.3,594.1 5,90.7 80.3,90.7",
+    "points": "80.7,594.2 5.3,594.1 5.0,90.7 80.3,90.7",
     "center": {
-      "x": 42.8,
-      "y": 220
+      "x": 42.9,
+      "y": 342.5
     }
   },
   {
     "id": "mammals_5",
     "name": "Mammals of Africa",
     "status": "open",
-    "points": "80.4,244.1 328.3,244 380.1,244 379.4,311.9 80.5,312.1",
+    "points": "80.4,244.1 328.3,244.0 380.1,244.0 379.4,311.9 80.5,312.1",
     "center": {
-      "x": 230.1,
-      "y": 278
+      "x": 230.3,
+      "y": 278.1
     }
   },
   {
@@ -177,8 +222,8 @@ export const ROOMS = [
     "status": "open",
     "points": "377.4,104.3 377.5,183.7 80.4,183.5 80.3,104.5",
     "center": {
-      "x": 229,
-      "y": 155
+      "x": 228.9,
+      "y": 144
     }
   },
   {
@@ -187,98 +232,100 @@ export const ROOMS = [
     "status": "open",
     "points": "406.3,243.8 80.4,244.1 80.4,183.5 406.2,183.2 406.2,174.6 448.6,174.6 448.8,254.4 406.3,254.4",
     "center": {
-      "x": 270.3,
-      "y": 213.8
+      "x": 264.6,
+      "y": 214.5
     }
   },
   {
     "id": "mastaba",
     "name": "Inside Ancient Egypt",
-    "status": "closed",
-    "points": "400.6,421.9 444.8,421.9 444.8,519 400.7,519",
+    "status": "open",
+    "points": "400.6,421.9 444.8,421.9 444.8,519.0 400.7,519.0",
     "center": {
       "x": 422.7,
-      "y": 442
-    }
+      "y": 470.4
+    },
+    "sourceStatus": "closed"
   },
   {
     "id": "sci_hub",
     "name": "Science Hub",
     "status": "open",
-    "points": "666.6,462.5 619,462.5 619.1,415.4 666.7,415.5",
+    "points": "666.6,462.5 619.0,462.5 619.1,415.4 666.7,415.5",
     "center": {
-      "x": 642.8,
-      "y": 439
+      "x": 642.9,
+      "y": 438.9
     }
   },
   {
     "id": "fm_store",
     "name": "Museum Store",
     "status": "open",
-    "points": "856.9,499.2 856.8,576.9 686.7,576.6 686.9,499",
+    "points": "856.9,499.2 856.8,576.9 686.7,576.6 686.9,499.0",
     "center": {
       "x": 771.8,
-      "y": 537.9
+      "y": 538
     }
   },
   {
     "id": "founders",
     "name": "Founders' Room",
     "status": "closed",
-    "points": "672.9,576.6 672.7,646.5 658,646.7 630.5,646.3 618.2,646.3 618.1,576.7",
+    "points": "672.9,576.6 672.7,646.5 658.0,646.7 630.5,646.3 618.2,646.3 618.1,576.7",
     "center": {
       "x": 645.5,
-      "y": 611.5
+      "y": 611.7
     }
   },
   {
     "id": "pawnee_lodge",
     "name": "Pawnee Earth Lodge",
-    "status": "closed",
-    "points": "983.8,440.6 874,440.5 874.1,372.9 983.9,373",
+    "status": "open",
+    "points": "983.8,440.6 874.0,440.5 874.1,372.9 983.9,373.0",
     "center": {
       "x": 929,
-      "y": 390
-    }
+      "y": 406.8
+    },
+    "sourceStatus": "closed"
   },
   {
     "id": "field_bistro",
     "name": "Field Bistro",
     "status": "closed",
-    "points": "665.2,208.5 615.4,208.4 615.6,110.3 630.5,110.4 630.6,67.5 593.5,67.6 593.1,36 617.8,35.8 630.4,35.8 657.7,35.8 672.1,35.9 672.5,103.9 665.4,110.5",
+    "points": "665.2,208.5 615.4,208.4 615.6,110.3 630.5,110.4 630.6,67.5 593.5,67.6 593.1,36.0 617.8,35.8 630.4,35.8 657.7,35.8 672.1,35.9 672.5,103.9 665.4,110.5",
     "center": {
-      "x": 640.4,
-      "y": 116.3
+      "x": 632.8,
+      "y": 122.2
     }
   },
   {
     "id": "Room",
     "name": "Room",
     "status": "closed",
-    "points": "726.4,104 726.3,179.8 688,179.7 688.1,103.9",
+    "points": "726.4,104.0 726.3,179.8 688.0,179.7 688.1,103.9",
     "center": {
       "x": 707.2,
-      "y": 141.8
+      "y": 141.9
     }
   },
   {
     "id": "StaffOnly",
     "name": "StaffOnly",
     "status": "staff_only",
-    "points": "672.5,103.9 688.1,103.9 688,179.7 665.3,179.6 665.4,110.5",
+    "points": "672.5,103.9 688.1,103.9 688.0,179.7 665.3,179.6 665.4,110.5",
     "center": {
-      "x": 676.8,
-      "y": 142.3
+      "x": 676.7,
+      "y": 141.8
     }
   },
   {
     "id": "Room_2",
     "name": "Room_2",
     "status": "closed",
-    "points": "984.1,244 984,310.9 665.1,310.4 665.2,243.4",
+    "points": "984.1,244.0 984.0,310.9 665.1,310.4 665.2,243.4",
     "center": {
       "x": 824.6,
-      "y": 277.2
+      "y": 277.1
     }
   },
   {
@@ -287,7 +334,7 @@ export const ROOMS = [
     "status": "closed",
     "points": "665.2,243.4 665.1,310.4 616.9,310.3 617.1,243.3",
     "center": {
-      "x": 641.1,
+      "x": 641,
       "y": 276.9
     }
   },
@@ -295,9 +342,9 @@ export const ROOMS = [
     "id": "StaffOnly_2",
     "name": "StaffOnly_2",
     "status": "staff_only",
-    "points": "984,310.9 983.9,373 899.5,372.9 899.6,310.8",
+    "points": "984.0,310.9 983.9,373.0 899.5,372.9 899.6,310.8",
     "center": {
-      "x": 941.7,
+      "x": 941.8,
       "y": 341.9
     }
   },
@@ -305,39 +352,39 @@ export const ROOMS = [
     "id": "apsaalooke",
     "name": "Apsáalooke Women and Warriors",
     "status": "open",
-    "points": "874,440.5 686,440.2 686.1,372.6 750,372.6 750.1,310.5 899.6,310.8 899.5,372.9 874.1,372.9",
+    "points": "874.0,440.5 686.0,440.2 686.1,372.6 750.0,372.6 750.1,310.5 899.6,310.8 899.5,372.9 874.1,372.9",
     "center": {
-      "x": 798.9,
-      "y": 379.2
+      "x": 792.8,
+      "y": 375.5
     }
   },
   {
     "id": "americas",
     "name": "Ancient Americas",
     "status": "open",
-    "points": "962.6,499.4 716.3,499.1 716.4,440.3 983.8,440.6 984.1,244 665.2,243.4 665.3,179.6 726.3,179.8 726.4,104 985.3,104.6 985.2,90.1 1060.7,90 1060.9,593.5 985.6,593.4 985.6,576.6 962.5,576.5 962.8,524.2 982.8,524 983.1,499.5",
+    "points": "962.6,499.4 716.3,499.1 716.4,440.3 983.8,440.6 984.1,244.0 665.2,243.4 665.3,179.6 726.3,179.8 726.4,104.0 985.3,104.6 985.2,90.1 1060.7,90.0 1060.9,593.5 985.6,593.4 985.6,576.6 962.5,576.5 962.8,524.2 982.8,524.0 983.1,499.5",
     "center": {
-      "x": 1022,
-      "y": 340
+      "x": 863.1,
+      "y": 341.8
     }
   },
   {
     "id": "StaffOnly_3",
     "name": "StaffOnly_3",
     "status": "staff_only",
-    "points": "962.6,499.4 983.1,499.5 982.8,524 962.8,524.2 962.5,576.5 856.8,576 856.9,499.2",
+    "points": "962.6,499.4 983.1,499.5 982.8,524.0 962.8,524.2 962.5,576.5 856.8,576.0 856.9,499.2",
     "center": {
-      "x": 913.4,
-      "y": 536.3
+      "x": 920,
+      "y": 537.9
     }
   },
   {
     "id": "Room_4",
     "name": "Room_4",
     "status": "closed",
-    "points": "750,372.6 665,372.5 665.1,310.4 750.1,310.5",
+    "points": "750.0,372.6 665.0,372.5 665.1,310.4 750.1,310.5",
     "center": {
-      "x": 707.6,
+      "x": 707.5,
       "y": 341.5
     }
   },
@@ -345,17 +392,17 @@ export const ROOMS = [
     "id": "StaffOnly_4",
     "name": "StaffOnly_4",
     "status": "staff_only",
-    "points": "394.4,646.9 394.1,568.9 448,568.6 448.3,646.6 436.2,646.7 407.7,646.7",
+    "points": "394.4,646.9 394.1,568.9 448.0,568.6 448.3,646.6 436.2,646.7 407.7,646.7",
     "center": {
       "x": 421.2,
-      "y": 607.7
+      "y": 607.8
     }
   },
   {
     "id": "StaffOnly_5",
     "name": "StaffOnly_5",
     "status": "staff_only",
-    "points": "316,440.3 400.6,440.3 400.6,500.3 316,500.3",
+    "points": "316.0,440.3 400.6,440.3 400.6,500.3 316.0,500.3",
     "center": {
       "x": 358.3,
       "y": 470.3
@@ -365,10 +412,10 @@ export const ROOMS = [
     "id": "StaffOnly_6",
     "name": "StaffOnly_6",
     "status": "staff_only",
-    "points": "394.4,36.1 408,35.7 435,36 448.3,36 448.5,6 477.8,6.3 476.8,69.2 435.6,68.8 435.2,112 394.3,111.6",
+    "points": "394.4,36.1 408.0,35.7 435.0,36.0 448.3,36.0 448.5,6.0 477.8,6.3 476.8,69.2 435.6,68.8 435.2,112.0 394.3,111.6",
     "center": {
-      "x": 433.3,
-      "y": 59.8
+      "x": 436.1,
+      "y": 59
     }
   },
   {
@@ -378,18 +425,19 @@ export const ROOMS = [
     "points": "665.7,480.6 665.6,510.7 591.2,510.5 591.3,480.4",
     "center": {
       "x": 628.5,
-      "y": 495.6
+      "y": 495.5
     }
   },
   {
     "id": "Space",
     "name": "Space",
-    "status": "open",
+    "status": "closed",
     "points": "379.4,311.9 379.7,284.2 429.8,284.2 429.8,311.9",
     "center": {
-      "x": 404.7,
-      "y": 290
-    }
+      "x": 404.6,
+      "y": 298
+    },
+    "sourceStatus": "open"
   },
   {
     "id": "Slave_Ship",
@@ -403,7 +451,6 @@ export const ROOMS = [
   }
 ];
 
-// Wszystkie 25 obiektów Points of Interest z pliku json (ekspozycje, udogodnienia, wejścia)
 export const POINTS_OF_INTEREST = [
   {
     "id": "POI_south_entrance",
@@ -416,15 +463,15 @@ export const POINTS_OF_INTEREST = [
     },
     "approach": {
       "column": 534,
-      "row": 643,
+      "row": 640,
       "x": 0.3,
-      "y": 60.5,
-      "distanceToAnchorM": 0.601
+      "y": 59.9,
+      "distanceToAnchorM": 1.201
     },
     "unavailableReason": null,
     "x": 534.3,
     "y": 646.5,
-    "icon": "🚪"
+    "icon": ""
   },
   {
     "id": "POI_north_entrance",
@@ -437,15 +484,15 @@ export const POINTS_OF_INTEREST = [
     },
     "approach": {
       "column": 533,
-      "row": 29,
+      "row": 31,
       "x": 0.1,
-      "y": -62.3,
-      "distanceToAnchorM": 0.741
+      "y": -61.9,
+      "distanceToAnchorM": 1.14
     },
     "unavailableReason": null,
     "x": 533.6,
     "y": 25.8,
-    "icon": "🚪"
+    "icon": ""
   },
   {
     "id": "POI_maximo",
@@ -457,16 +504,16 @@ export const POINTS_OF_INTEREST = [
       "y": -27
     },
     "approach": {
-      "column": 500,
-      "row": 202,
-      "x": -6.5,
-      "y": -27.7,
-      "distanceToAnchorM": 3.569
+      "column": 492,
+      "row": 205,
+      "x": -8.1,
+      "y": -27.1,
+      "distanceToAnchorM": 5.101
     },
     "unavailableReason": null,
     "x": 518,
     "y": 206,
-    "icon": "🦖"
+    "icon": ""
   },
   {
     "id": "POI_elephants",
@@ -479,15 +526,15 @@ export const POINTS_OF_INTEREST = [
     },
     "approach": {
       "column": 529,
-      "row": 320,
+      "row": 313,
       "x": -0.7,
-      "y": -4.1,
-      "distanceToAnchorM": 3.102
+      "y": -5.5,
+      "distanceToAnchorM": 4.501
     },
     "unavailableReason": null,
     "x": 530,
     "y": 336,
-    "icon": "🐘"
+    "icon": ""
   },
   {
     "id": "POI_totems",
@@ -500,15 +547,15 @@ export const POINTS_OF_INTEREST = [
     },
     "approach": {
       "column": 530,
-      "row": 425,
+      "row": 419,
       "x": -0.5,
-      "y": 16.9,
-      "distanceToAnchorM": 0.141
+      "y": 15.7,
+      "distanceToAnchorM": 1.304
     },
     "unavailableReason": null,
     "x": 530,
     "y": 426,
-    "icon": "🪵"
+    "icon": ""
   },
   {
     "id": "POI_tsavo_lions",
@@ -520,16 +567,16 @@ export const POINTS_OF_INTEREST = [
       "y": -1.36
     },
     "approach": {
-      "column": 26,
+      "column": 29,
       "row": 334,
-      "x": -101.3,
+      "x": -100.7,
       "y": -1.3,
-      "distanceToAnchorM": 2.121
+      "distanceToAnchorM": 2.721
     },
     "unavailableReason": null,
     "x": 15.9,
     "y": 334.2,
-    "icon": "🦁"
+    "icon": ""
   },
   {
     "id": "POI_seabirds",
@@ -542,15 +589,15 @@ export const POINTS_OF_INTEREST = [
     },
     "approach": {
       "column": 228,
-      "row": 123,
+      "row": 126,
       "x": -60.9,
-      "y": -43.5,
-      "distanceToAnchorM": 1.872
+      "y": -42.9,
+      "distanceToAnchorM": 2.471
     },
     "unavailableReason": null,
     "x": 228.9,
     "y": 114.2,
-    "icon": "🦅"
+    "icon": ""
   },
   {
     "id": "POI_mask",
@@ -562,16 +609,16 @@ export const POINTS_OF_INTEREST = [
       "y": -22.94
     },
     "approach": {
-      "column": 740,
-      "row": 230,
-      "x": 41.5,
-      "y": -22.1,
-      "distanceToAnchorM": 0.859
+      "column": 741,
+      "row": 233,
+      "x": 41.7,
+      "y": -21.5,
+      "distanceToAnchorM": 1.44
     },
     "unavailableReason": null,
     "x": 741.4,
     "y": 226.3,
-    "icon": "🎭"
+    "icon": ""
   },
   {
     "id": "POI_pawnee_lodge",
@@ -582,11 +629,17 @@ export const POINTS_OF_INTEREST = [
       "x": 80.69,
       "y": 13.15
     },
-    "approach": null,
-    "unavailableReason": "closed_or_staff_only",
+    "approach": {
+      "column": 913,
+      "row": 394,
+      "x": 76.1,
+      "y": 10.7,
+      "distanceToAnchorM": 5.203
+    },
+    "unavailableReason": null,
     "x": 936.4,
     "y": 406.8,
-    "icon": "🛖"
+    "icon": ""
   },
   {
     "id": "POI_mastaba",
@@ -597,11 +650,17 @@ export const POINTS_OF_INTEREST = [
       "x": -22.65,
       "y": 25.89
     },
-    "approach": null,
-    "unavailableReason": "closed_or_staff_only",
+    "approach": {
+      "column": 447,
+      "row": 470,
+      "x": -17.1,
+      "y": 25.9,
+      "distanceToAnchorM": 5.55
+    },
+    "unavailableReason": null,
     "x": 419.7,
     "y": 470.4,
-    "icon": "⚱️"
+    "icon": ""
   },
   {
     "id": "Amenity_restroom_1",
@@ -612,17 +671,11 @@ export const POINTS_OF_INTEREST = [
       "x": -25.93,
       "y": -8.55
     },
-    "approach": {
-      "column": 403,
-      "row": 298,
-      "x": -25.9,
-      "y": -8.5,
-      "distanceToAnchorM": 0.058
-    },
-    "unavailableReason": null,
+    "approach": null,
+    "unavailableReason": "closed_or_staff_only",
     "x": 403.3,
     "y": 298.3,
-    "icon": "🚻"
+    "icon": ""
   },
   {
     "id": "Amenity_stairs_up_down_1",
@@ -643,7 +696,7 @@ export const POINTS_OF_INTEREST = [
     "unavailableReason": null,
     "x": 390.3,
     "y": 132.4,
-    "icon": "🪜"
+    "icon": ""
   },
   {
     "id": "Amenity_stairs_up_1",
@@ -664,7 +717,7 @@ export const POINTS_OF_INTEREST = [
     "unavailableReason": null,
     "x": 449.3,
     "y": 90,
-    "icon": "🪜"
+    "icon": ""
   },
   {
     "id": "Amenity_stairs_up_2",
@@ -685,7 +738,7 @@ export const POINTS_OF_INTEREST = [
     "unavailableReason": null,
     "x": 614.7,
     "y": 90.5,
-    "icon": "🪜"
+    "icon": ""
   },
   {
     "id": "Amenity_stairs_down_1",
@@ -706,7 +759,7 @@ export const POINTS_OF_INTEREST = [
     "unavailableReason": null,
     "x": 643.6,
     "y": 341.1,
-    "icon": "🪜"
+    "icon": ""
   },
   {
     "id": "Amenity_stairs_down_2",
@@ -727,7 +780,7 @@ export const POINTS_OF_INTEREST = [
     "unavailableReason": null,
     "x": 423.3,
     "y": 341.8,
-    "icon": "🪜"
+    "icon": ""
   },
   {
     "id": "Amenity_elevator_1",
@@ -740,15 +793,15 @@ export const POINTS_OF_INTEREST = [
     },
     "approach": {
       "column": 394,
-      "row": 383,
+      "row": 393,
       "x": -27.7,
-      "y": 8.5,
-      "distanceToAnchorM": 0.081
+      "y": 10.5,
+      "distanceToAnchorM": 2.041
     },
     "unavailableReason": null,
     "x": 394.8,
     "y": 383.3,
-    "icon": "🛗"
+    "icon": ""
   },
   {
     "id": "Amenity_elevator_2",
@@ -760,16 +813,16 @@ export const POINTS_OF_INTEREST = [
       "y": 8.53
     },
     "approach": {
-      "column": 671,
+      "column": 660,
       "row": 383,
-      "x": 27.7,
+      "x": 25.5,
       "y": 8.5,
-      "distanceToAnchorM": 0.058
+      "distanceToAnchorM": 2.15
     },
     "unavailableReason": null,
     "x": 671.3,
     "y": 383.6,
-    "icon": "🛗"
+    "icon": ""
   },
   {
     "id": "Amenity_store_1",
@@ -790,7 +843,7 @@ export const POINTS_OF_INTEREST = [
     "unavailableReason": null,
     "x": 702.6,
     "y": 535.9,
-    "icon": "🛍️"
+    "icon": ""
   },
   {
     "id": "Amenity_atm_1",
@@ -811,7 +864,7 @@ export const POINTS_OF_INTEREST = [
     "unavailableReason": null,
     "x": 522.2,
     "y": 636.9,
-    "icon": "🏧"
+    "icon": ""
   },
   {
     "id": "Amenity_stairs_up_3",
@@ -832,7 +885,7 @@ export const POINTS_OF_INTEREST = [
     "unavailableReason": null,
     "x": 510.6,
     "y": 577.9,
-    "icon": "🪜"
+    "icon": ""
   },
   {
     "id": "Amenity_stairs_up_down_2",
@@ -853,7 +906,7 @@ export const POINTS_OF_INTEREST = [
     "unavailableReason": null,
     "x": 391.1,
     "y": 552.3,
-    "icon": "🪜"
+    "icon": ""
   },
   {
     "id": "Amenity_stairs_up_4",
@@ -865,16 +918,16 @@ export const POINTS_OF_INTEREST = [
       "y": -41.68
     },
     "approach": {
-      "column": 92,
+      "column": 96,
       "row": 132,
-      "x": -88.1,
+      "x": -87.3,
       "y": -41.7,
-      "distanceToAnchorM": 0.082
+      "distanceToAnchorM": 0.88
     },
     "unavailableReason": null,
     "x": 92.1,
     "y": 132.6,
-    "icon": "🪜"
+    "icon": ""
   },
   {
     "id": "Amenity_stairs_up_5",
@@ -895,7 +948,7 @@ export const POINTS_OF_INTEREST = [
     "unavailableReason": null,
     "x": 973.9,
     "y": 551.5,
-    "icon": "🪜"
+    "icon": ""
   },
   {
     "id": "Amenity_store_2",
@@ -916,12 +969,10 @@ export const POINTS_OF_INTEREST = [
     "unavailableReason": null,
     "x": 851.2,
     "y": 420.9,
-    "icon": "🛍️"
+    "icon": ""
   }
 ];
 
-
-// Wszystkie 84 drzwi z pliku json łączących pomieszczenia
 export const DOORS = [
   {
     "id": "door_1",
@@ -934,6 +985,7 @@ export const DOORS = [
       "animals",
       "hall"
     ],
+    "passable": true,
     "x": 377.7,
     "y": 535.9,
     "widthPx": 20
@@ -949,6 +1001,7 @@ export const DOORS = [
       "africa",
       "hall"
     ],
+    "passable": true,
     "x": 378.8,
     "y": 391.1,
     "widthPx": 20
@@ -964,6 +1017,7 @@ export const DOORS = [
       "mammals",
       "staff"
     ],
+    "passable": true,
     "x": 379.5,
     "y": 293,
     "widthPx": 13
@@ -979,6 +1033,7 @@ export const DOORS = [
       "africa",
       "birds"
     ],
+    "passable": true,
     "x": 134,
     "y": 440.4,
     "widthPx": 13
@@ -994,6 +1049,7 @@ export const DOORS = [
       "africa",
       "animals"
     ],
+    "passable": true,
     "x": 240.6,
     "y": 440.3,
     "widthPx": 13
@@ -1009,6 +1065,7 @@ export const DOORS = [
       "africa",
       "staff"
     ],
+    "passable": false,
     "x": 347.3,
     "y": 440.3,
     "widthPx": 13
@@ -1024,6 +1081,7 @@ export const DOORS = [
       "apsaalooke",
       "americas"
     ],
+    "passable": true,
     "x": 760.4,
     "y": 440.1,
     "widthPx": 13
@@ -1039,6 +1097,7 @@ export const DOORS = [
       "americas",
       "americas"
     ],
+    "passable": true,
     "x": 909.4,
     "y": 440,
     "widthPx": 13
@@ -1054,6 +1113,7 @@ export const DOORS = [
       "mammals",
       "animals"
     ],
+    "passable": true,
     "x": 80.7,
     "y": 513.9,
     "widthPx": 13
@@ -1069,6 +1129,7 @@ export const DOORS = [
       "mammals",
       "africa"
     ],
+    "passable": true,
     "x": 80.6,
     "y": 398.3,
     "widthPx": 13
@@ -1084,6 +1145,7 @@ export const DOORS = [
       "mammals",
       "mammals"
     ],
+    "passable": true,
     "x": 80.5,
     "y": 282.8,
     "widthPx": 13
@@ -1099,6 +1161,7 @@ export const DOORS = [
       "mammals",
       "birds"
     ],
+    "passable": true,
     "x": 80.3,
     "y": 167.3,
     "widthPx": 13
@@ -1114,6 +1177,7 @@ export const DOORS = [
       "nature",
       "africa"
     ],
+    "passable": true,
     "x": 101.3,
     "y": 371.2,
     "widthPx": 13
@@ -1129,6 +1193,7 @@ export const DOORS = [
       "staff",
       "apsaalooke"
     ],
+    "passable": false,
     "x": 707.5,
     "y": 370.9,
     "widthPx": 13
@@ -1144,6 +1209,7 @@ export const DOORS = [
       "staff",
       "americas"
     ],
+    "passable": false,
     "x": 929,
     "y": 370.8,
     "widthPx": 13
@@ -1159,6 +1225,7 @@ export const DOORS = [
       "nature",
       "africa"
     ],
+    "passable": true,
     "x": 121.8,
     "y": 341.6,
     "widthPx": 13
@@ -1174,6 +1241,7 @@ export const DOORS = [
       "mammals",
       "africa"
     ],
+    "passable": true,
     "x": 155.2,
     "y": 312.1,
     "widthPx": 13
@@ -1189,6 +1257,7 @@ export const DOORS = [
       "mammals",
       "africa"
     ],
+    "passable": true,
     "x": 304.7,
     "y": 312,
     "widthPx": 13
@@ -1204,6 +1273,7 @@ export const DOORS = [
       "staff",
       "staff"
     ],
+    "passable": false,
     "x": 678.1,
     "y": 311.8,
     "widthPx": 13
@@ -1219,6 +1289,7 @@ export const DOORS = [
       "staff",
       "apsaalooke"
     ],
+    "passable": true,
     "x": 800.5,
     "y": 311.8,
     "widthPx": 13
@@ -1234,6 +1305,7 @@ export const DOORS = [
       "staff",
       "staff"
     ],
+    "passable": false,
     "x": 922.8,
     "y": 311.7,
     "widthPx": 13
@@ -1249,6 +1321,7 @@ export const DOORS = [
       "birds",
       "animals"
     ],
+    "passable": true,
     "x": 228.5,
     "y": 470.4,
     "widthPx": 13
@@ -1264,6 +1337,7 @@ export const DOORS = [
       "birds",
       "animals"
     ],
+    "passable": true,
     "x": 134,
     "y": 500.4,
     "widthPx": 13
@@ -1279,6 +1353,7 @@ export const DOORS = [
       "animals",
       "animals"
     ],
+    "passable": true,
     "x": 240.7,
     "y": 500.4,
     "widthPx": 13
@@ -1294,6 +1369,7 @@ export const DOORS = [
       "staff",
       "animals"
     ],
+    "passable": true,
     "x": 347.3,
     "y": 500.3,
     "widthPx": 13
@@ -1309,6 +1385,7 @@ export const DOORS = [
       "americas",
       "store"
     ],
+    "passable": true,
     "x": 760.9,
     "y": 500.1,
     "widthPx": 13
@@ -1324,6 +1401,7 @@ export const DOORS = [
       "americas",
       "staff"
     ],
+    "passable": false,
     "x": 909,
     "y": 500.1,
     "widthPx": 13
@@ -1339,6 +1417,7 @@ export const DOORS = [
       "animals",
       "staff"
     ],
+    "passable": true,
     "x": 316,
     "y": 470.3,
     "widthPx": 13
@@ -1354,6 +1433,7 @@ export const DOORS = [
       "hall",
       "warm"
     ],
+    "passable": true,
     "x": 642.9,
     "y": 576.5,
     "widthPx": 20
@@ -1369,6 +1449,7 @@ export const DOORS = [
       "nature",
       "mammals"
     ],
+    "passable": true,
     "x": 134.7,
     "y": 244.1,
     "widthPx": 13
@@ -1384,6 +1465,7 @@ export const DOORS = [
       "nature",
       "mammals"
     ],
+    "passable": true,
     "x": 243.3,
     "y": 244.1,
     "widthPx": 13
@@ -1399,6 +1481,7 @@ export const DOORS = [
       "nature",
       "mammals"
     ],
+    "passable": true,
     "x": 351.9,
     "y": 244,
     "widthPx": 13
@@ -1414,6 +1497,7 @@ export const DOORS = [
       "americas",
       "staff"
     ],
+    "passable": true,
     "x": 678.3,
     "y": 243.8,
     "widthPx": 13
@@ -1429,6 +1513,7 @@ export const DOORS = [
       "americas",
       "staff"
     ],
+    "passable": true,
     "x": 800.6,
     "y": 243.8,
     "widthPx": 13
@@ -1444,6 +1529,7 @@ export const DOORS = [
       "americas",
       "staff"
     ],
+    "passable": true,
     "x": 922.9,
     "y": 243.7,
     "widthPx": 13
@@ -1459,6 +1545,7 @@ export const DOORS = [
       "birds",
       "hall"
     ],
+    "passable": true,
     "x": 377.4,
     "y": 146.6,
     "widthPx": 20
@@ -1474,6 +1561,7 @@ export const DOORS = [
       "nature",
       "birds"
     ],
+    "passable": true,
     "x": 351.9,
     "y": 183.7,
     "widthPx": 13
@@ -1489,6 +1577,7 @@ export const DOORS = [
       "nature",
       "birds"
     ],
+    "passable": true,
     "x": 243.3,
     "y": 183.6,
     "widthPx": 13
@@ -1504,6 +1593,7 @@ export const DOORS = [
       "nature",
       "birds"
     ],
+    "passable": true,
     "x": 134.7,
     "y": 183.6,
     "widthPx": 13
@@ -1519,6 +1609,7 @@ export const DOORS = [
       "hall",
       "nature"
     ],
+    "passable": true,
     "x": 427.4,
     "y": 174.6,
     "widthPx": 20
@@ -1534,6 +1625,7 @@ export const DOORS = [
       "staff",
       "hall"
     ],
+    "passable": true,
     "x": 449.1,
     "y": 605.1,
     "widthPx": 20
@@ -1549,6 +1641,7 @@ export const DOORS = [
       "nature",
       "hall"
     ],
+    "passable": true,
     "x": 448.7,
     "y": 214.4,
     "widthPx": 20
@@ -1564,6 +1657,7 @@ export const DOORS = [
       "nature",
       "hall"
     ],
+    "passable": true,
     "x": 427.5,
     "y": 254.4,
     "widthPx": 20
@@ -1579,6 +1673,7 @@ export const DOORS = [
       "hall",
       "egypt"
     ],
+    "passable": true,
     "x": 422.7,
     "y": 421.9,
     "widthPx": 20
@@ -1594,6 +1689,7 @@ export const DOORS = [
       "egypt",
       "hall"
     ],
+    "passable": true,
     "x": 444.8,
     "y": 470.4,
     "widthPx": 20
@@ -1609,6 +1705,7 @@ export const DOORS = [
       "egypt",
       "hall"
     ],
+    "passable": true,
     "x": 422.7,
     "y": 519,
     "widthPx": 20
@@ -1624,6 +1721,7 @@ export const DOORS = [
       "staff",
       "egypt"
     ],
+    "passable": false,
     "x": 400.6,
     "y": 470.4,
     "widthPx": 13
@@ -1639,6 +1737,7 @@ export const DOORS = [
       "hall",
       "white"
     ],
+    "passable": true,
     "x": 642.8,
     "y": 462.5,
     "widthPx": 20
@@ -1654,6 +1753,7 @@ export const DOORS = [
       "hall",
       "warm"
     ],
+    "passable": true,
     "x": 618.8,
     "y": 609,
     "widthPx": 20
@@ -1669,6 +1769,7 @@ export const DOORS = [
       "hall",
       "white"
     ],
+    "passable": true,
     "x": 619,
     "y": 438.9,
     "widthPx": 20
@@ -1684,6 +1785,7 @@ export const DOORS = [
       "hall",
       "staff"
     ],
+    "passable": true,
     "x": 619.3,
     "y": 276.9,
     "widthPx": 20
@@ -1699,6 +1801,7 @@ export const DOORS = [
       "white",
       "hall"
     ],
+    "passable": true,
     "x": 642.9,
     "y": 415.5,
     "widthPx": 20
@@ -1714,6 +1817,7 @@ export const DOORS = [
       "warm",
       "hall"
     ],
+    "passable": true,
     "x": 666.5,
     "y": 495.6,
     "widthPx": 20
@@ -1729,6 +1833,7 @@ export const DOORS = [
       "white",
       "hall"
     ],
+    "passable": true,
     "x": 666.6,
     "y": 439.1,
     "widthPx": 20
@@ -1744,6 +1849,7 @@ export const DOORS = [
       "staff",
       "staff"
     ],
+    "passable": false,
     "x": 666.9,
     "y": 307,
     "widthPx": 13
@@ -1759,6 +1865,7 @@ export const DOORS = [
       "warm",
       "staff"
     ],
+    "passable": false,
     "x": 667.1,
     "y": 176,
     "widthPx": 13
@@ -1774,6 +1881,7 @@ export const DOORS = [
       "store",
       "staff"
     ],
+    "passable": true,
     "x": 856.9,
     "y": 535.6,
     "widthPx": 13
@@ -1789,6 +1897,7 @@ export const DOORS = [
       "hall",
       "store"
     ],
+    "passable": true,
     "x": 686.7,
     "y": 535.3,
     "widthPx": 20
@@ -1804,6 +1913,7 @@ export const DOORS = [
       "hall",
       "apsaalooke"
     ],
+    "passable": true,
     "x": 687,
     "y": 406.4,
     "widthPx": 20
@@ -1819,6 +1929,7 @@ export const DOORS = [
       "staff",
       "staff"
     ],
+    "passable": false,
     "x": 687.5,
     "y": 144.4,
     "widthPx": 13
@@ -1834,6 +1945,7 @@ export const DOORS = [
       "apsaalooke",
       "americas"
     ],
+    "passable": true,
     "x": 874,
     "y": 406.7,
     "widthPx": 13
@@ -1849,6 +1961,7 @@ export const DOORS = [
       "staff",
       "americas"
     ],
+    "passable": true,
     "x": 983.7,
     "y": 511.7,
     "widthPx": 13
@@ -1864,6 +1977,7 @@ export const DOORS = [
       "americas",
       "americas"
     ],
+    "passable": true,
     "x": 983.9,
     "y": 391.5,
     "widthPx": 13
@@ -1879,6 +1993,7 @@ export const DOORS = [
       "staff",
       "americas"
     ],
+    "passable": true,
     "x": 984,
     "y": 293.1,
     "widthPx": 13
@@ -1894,6 +2009,7 @@ export const DOORS = [
       "hall",
       "warm"
     ],
+    "passable": true,
     "x": 640.3,
     "y": 208.4,
     "widthPx": 20
@@ -1909,6 +2025,7 @@ export const DOORS = [
       "hall",
       "warm"
     ],
+    "passable": true,
     "x": 615.5,
     "y": 159.4,
     "widthPx": 20
@@ -1924,6 +2041,7 @@ export const DOORS = [
       "hall",
       "staff"
     ],
+    "passable": true,
     "x": 414.7,
     "y": 110,
     "widthPx": 20
@@ -1939,6 +2057,7 @@ export const DOORS = [
       "hall",
       "warm"
     ],
+    "passable": true,
     "x": 630.5,
     "y": 89,
     "widthPx": 20
@@ -1954,6 +2073,7 @@ export const DOORS = [
       "staff",
       "hall"
     ],
+    "passable": true,
     "x": 456.2,
     "y": 67.8,
     "widthPx": 20
@@ -1969,6 +2089,7 @@ export const DOORS = [
       "warm",
       "hall"
     ],
+    "passable": true,
     "x": 612,
     "y": 67.5,
     "widthPx": 20
@@ -1984,6 +2105,7 @@ export const DOORS = [
       "hall",
       "warm"
     ],
+    "passable": true,
     "x": 593.3,
     "y": 51.8,
     "widthPx": 20
@@ -1999,6 +2121,7 @@ export const DOORS = [
       "hall",
       "warm"
     ],
+    "passable": true,
     "x": 603.1,
     "y": 36,
     "widthPx": 15
@@ -2014,6 +2137,7 @@ export const DOORS = [
       "staff",
       "americas"
     ],
+    "passable": true,
     "x": 726.3,
     "y": 144.4,
     "widthPx": 13
@@ -2029,6 +2153,7 @@ export const DOORS = [
       "americas",
       "staff"
     ],
+    "passable": true,
     "x": 695.8,
     "y": 179.7,
     "widthPx": 13
@@ -2044,6 +2169,7 @@ export const DOORS = [
       "apsaalooke",
       "staff"
     ],
+    "passable": true,
     "x": 899.5,
     "y": 341.9,
     "widthPx": 13
@@ -2059,6 +2185,7 @@ export const DOORS = [
       "staff",
       "apsaalooke"
     ],
+    "passable": true,
     "x": 750,
     "y": 341.6,
     "widthPx": 13
@@ -2074,6 +2201,7 @@ export const DOORS = [
       "hall",
       "americas"
     ],
+    "passable": true,
     "x": 716.4,
     "y": 469.7,
     "widthPx": 20
@@ -2089,6 +2217,7 @@ export const DOORS = [
       "staff",
       "americas"
     ],
+    "passable": true,
     "x": 962.6,
     "y": 547.8,
     "widthPx": 13
@@ -2104,6 +2233,7 @@ export const DOORS = [
       "hall",
       "staff"
     ],
+    "passable": true,
     "x": 421,
     "y": 568.8,
     "widthPx": 20
@@ -2119,6 +2249,7 @@ export const DOORS = [
       "staff",
       "hall"
     ],
+    "passable": true,
     "x": 477.1,
     "y": 47.1,
     "widthPx": 20
@@ -2134,6 +2265,7 @@ export const DOORS = [
       "staff",
       "hall"
     ],
+    "passable": true,
     "x": 435.4,
     "y": 90.4,
     "widthPx": 20
@@ -2149,6 +2281,7 @@ export const DOORS = [
       "hall",
       "warm"
     ],
+    "passable": true,
     "x": 628.4,
     "y": 510.6,
     "widthPx": 20
@@ -2164,6 +2297,7 @@ export const DOORS = [
       "hall",
       "warm"
     ],
+    "passable": true,
     "x": 591.2,
     "y": 495.5,
     "widthPx": 20
@@ -2179,6 +2313,7 @@ export const DOORS = [
       "warm",
       "hall"
     ],
+    "passable": true,
     "x": 628.4,
     "y": 480.5,
     "widthPx": 20
@@ -2199,7 +2334,7 @@ export const DEFAULT_HAZARDS = [
   {
     "id": "wet_floor",
     "name": "Mokra podłoga",
-    "icon": "🧹",
+    "icon": "",
     "color": "#f59e0b",
     "bgColor": "rgba(245, 158, 11, 0.25)",
     "borderColor": "#f59e0b"
@@ -2207,7 +2342,7 @@ export const DEFAULT_HAZARDS = [
   {
     "id": "damaged_surface",
     "name": "Uszkodzona nawierzchnia",
-    "icon": "⚠️",
+    "icon": "",
     "color": "#ef4444",
     "bgColor": "rgba(239, 68, 68, 0.25)",
     "borderColor": "#ef4444"
@@ -2215,7 +2350,7 @@ export const DEFAULT_HAZARDS = [
   {
     "id": "trash_on_floor",
     "name": "Śmieci na podłodze",
-    "icon": "🗑️",
+    "icon": "",
     "color": "#8b5cf6",
     "bgColor": "rgba(139, 92, 246, 0.25)",
     "borderColor": "#8b5cf6"

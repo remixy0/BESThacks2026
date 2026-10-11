@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ROOMS } from '../data/museumLayout';
 
 export default function VisitorSidebar({
@@ -12,35 +12,20 @@ export default function VisitorSidebar({
   selectedVisitorId,
   onSelectVisitor
 }) {
+  const [showFireConfirm, setShowFireConfirm] = useState(false);
+
   return (
     <div className="sidebar-container">
       {/* Nagłówek panelu */}
       <div className="sidebar-header">
-        <h2>🏛️ Monitor Bezpieczeństwa</h2>
-        <p>Podgląd gości na żywo & Zarządzanie wyłączeniami stref</p>
+        <h2>Monitor Bezpieczeństwa</h2>
       </div>
 
-      {/* Przycisk alarmu pożarowego */}
-      <div className="fire-alert-box">
-        <button
-          type="button"
-          className={`fire-button ${isFireActive ? 'active' : ''}`}
-          onClick={onToggleFire}
-        >
-          {isFireActive ? '🧯 Wyłącz alarm pożarowy' : '🔥 ALARM POŻAROWY — NADAJ EWAKUACJĘ'}
-        </button>
-        {isFireActive && (
-          <p className="fire-hint">🚨 Sygnał ewakuacji nadany do wszystkich urządzeń gości!</p>
-        )}
-      </div>
 
       {/* Okno: Aktywne wyłączenia i przeszkody (Główna rola administratora) */}
       <div className="closures-section">
         <div className="closures-header">
-          <h4>🚧 Wyłączone strefy ({obstacles.length})</h4>
-          <span className="closures-sub">
-            Wysyłane od razu do backendu, aby urządzenia gości omijały te obszary
-          </span>
+          <h4>Wyłączone strefy ({obstacles.length})</h4>
         </div>
 
         {obstacles.length > 0 ? (
@@ -48,7 +33,7 @@ export default function VisitorSidebar({
             {obstacles.map(obs => (
               <div key={obs.id} className="active-closure-item" style={{ borderLeftColor: obs.color }}>
                 <div className="closure-item-info">
-                  <strong>{obs.icon} {obs.reason}</strong>
+                  <strong>{obs.reason}</strong>
                   <span style={{ fontSize: '11px', color: '#cbd5e1' }}>
                     Sala: <strong>{obs.roomName}</strong>
                   </span>
@@ -65,34 +50,30 @@ export default function VisitorSidebar({
                   type="button"
                   className="btn-open-room"
                   onClick={() => onRemoveObstacle && onRemoveObstacle(obs.id)}
-                  title="Usuń tę przeszkodę i odblokuj obszar w backendzie"
+                  title="Usuń tę przeszkodę i odblokuj obszar"
                 >
-                  ✕ Usuń
+                  Usuń
                 </button>
               </div>
             ))}
           </div>
         ) : (
           <div className="empty-closures-hint">
-            Brak zablokowanych stref. Aby wyłączyć fragment sali z użytku, <strong>narysuj prostokąt myszką na mapie</strong>.
+            Brak zablokowanych stref.
           </div>
         )}
       </div>
 
       {/* Sekcja: Pasywny podgląd obecnych gości na żywo */}
       <div className="visitors-top-bar">
-        <h3>👥 Goście w muzeum ({visitors.length})</h3>
-        <span className="live-pulse-badge">🔴 Podgląd live</span>
-      </div>
-      <div className="visitors-sub-hint">
-        Lokalizacje i obecność gości są pobierane automatycznie w czasie rzeczywistym z backendu.
+        <h3>Goście w muzeum ({visitors.length})</h3>
       </div>
 
       {/* Lista gości na żywo */}
       <div className="visitors-list">
         {visitors.length === 0 ? (
           <div className="empty-list">
-            Brak aktywnych gości. Nowe osoby pojawią się automatycznie na mapie, gdy zalogują się w muzeum.
+            Brak aktywnych gości.
           </div>
         ) : (
           visitors.map(vis => {
@@ -108,8 +89,8 @@ export default function VisitorSidebar({
                 title="Kliknij, aby podświetlić gościa na mapie"
               >
                 <div className="visitor-card-header">
-                  <strong>{vis.name} {isSelected ? '🎯' : ''}</strong>
-                  <span className="visitor-live-tag">🟢 Na żywo</span>
+                  <strong>{vis.name}</strong>
+                  <span className="visitor-live-tag">Na żywo</span>
                 </div>
 
                 <div className="visitor-room-display">
@@ -125,14 +106,14 @@ export default function VisitorSidebar({
                 {vis.destination && (
                   <div className="visitor-dest-passive">
                     <span>Cel wybrany w telefonie:</span>
-                    <strong>🏁 {vis.destination.name || 'Wybrany punkt'}</strong>
+                    <strong>{vis.destination.name || 'Wybrany punkt'}</strong>
                   </div>
                 )}
 
                 {/* Sekcja problemu u danej osoby (SOS / awaria) */}
                 {hasProblem ? (
                   <div className="problem-alert-box">
-                    <p className="problem-text">⚠️ <strong>Zgłoszony problem:</strong> {vis.problem}</p>
+                    <p className="problem-text"><strong>Zgłoszony problem:</strong> {vis.problem}</p>
                     <button
                       type="button"
                       className="btn-resolve"
@@ -141,7 +122,7 @@ export default function VisitorSidebar({
                         onResolveProblem(vis.id);
                       }}
                     >
-                      ✓ Oznacz jako rozwiązany
+                      Oznacz jako rozwiązany
                     </button>
                   </div>
                 ) : (
@@ -153,12 +134,62 @@ export default function VisitorSidebar({
                       onTriggerProblem(vis.id);
                     }}
                   >
-                    ⚠️ Zgłoś problem u tego gościa
+                    Zgłoś problem u tego gościa
                   </button>
                 )}
               </div>
             );
           })
+        )}
+      </div>
+
+      {/* Przycisk alarmu pożarowego z potwierdzeniem (na dole panelu) */}
+      <div className="fire-alert-box">
+        {isFireActive ? (
+          <>
+            <button
+              type="button"
+              className="fire-button active"
+              onClick={() => {
+                setShowFireConfirm(false);
+                onToggleFire();
+              }}
+            >
+              Wyłącz alarm pożarowy
+            </button>
+            <p className="fire-hint">Sygnał ewakuacji nadany do wszystkich urządzeń gości.</p>
+          </>
+        ) : showFireConfirm ? (
+          <div className="fire-confirm-card">
+            <p className="fire-confirm-title">Czy na pewno potwierdzasz ewakuację?</p>
+            <div className="fire-confirm-buttons">
+              <button
+                type="button"
+                className="btn-confirm-fire-yes"
+                onClick={() => {
+                  setShowFireConfirm(false);
+                  onToggleFire();
+                }}
+              >
+                Tak, potwierdzam ewakuację
+              </button>
+              <button
+                type="button"
+                className="btn-confirm-fire-cancel"
+                onClick={() => setShowFireConfirm(false)}
+              >
+                Anuluj
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="fire-button"
+            onClick={() => setShowFireConfirm(true)}
+          >
+            ALARM POŻAROWY — NADAJ EWAKUACJĘ
+          </button>
         )}
       </div>
     </div>
