@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { SAMPLE_PROBLEMS, DEFAULT_HAZARDS, ROOMS } from './data/museumLayout';
+import { SAMPLE_PROBLEMS, DEFAULT_HAZARDS, ROOMS, MUSEUM_METADATA } from './data/museumLayout';
 import MuseumMap from './components/MuseumMap';
 import VisitorSidebar from './components/VisitorSidebar';
 import LoginScreen from './components/LoginScreen';
 import {
   backendClient,
-  svgToWorld,
   worldToSvg,
   findRoomAtWorldCoords
 } from './services/navigationBackend';
+import { Server, CheckCircle2, AlertTriangle, RefreshCw, X, Shield, Activity } from 'lucide-react';
 import './App.css';
 
 function App() {
@@ -16,8 +16,9 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState('');
 
+  // Stan lokalizacji gości odebranych z backendu (/ws/admin "positions")
   const [visitors, setVisitors] = useState([]);
-  // Lista aktywnych przeszkód (małe prostokąty w salach)
+  // Stan wyłączonych stref odebranych z backendu (/ws/admin "policy")
   const [obstacles, setObstacles] = useState([]);
   const [activeHazardType, setActiveHazardType] = useState('wet_floor');
   const [customHazardText, setCustomHazardText] = useState('');
@@ -25,11 +26,12 @@ function App() {
   const [selectedVisitorId, setSelectedVisitorId] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
 
-  // Stan połączenia z backendem (WebSocket)
+  // Stan połączenia i konfiguracji adresu serwera
+  const [serverHost, setServerHost] = useState(backendClient.getHost());
   const [backendStatus, setBackendStatus] = useState(backendClient.status);
+  const [showServerModal, setShowServerModal] = useState(false);
+  const [serverHostInput, setServerHostInput] = useState(backendClient.getHost());
   const [trafficLogs, setTrafficLogs] = useState([]);
-  const [showWsConsole, setShowWsConsole] = useState(false);
-  const [wsUrlInput, setWsUrlInput] = useState(backendClient.url);
 
   const selectedVisitorIdRef = useRef(selectedVisitorId);
 
@@ -44,116 +46,120 @@ function App() {
     }, 3500);
   };
 
-  // Subskrypcja wiadomości i statusu WebSocket z backendu
+  // Subskrypcja zdarzeń WebSocket administratora z backendu
   useEffect(() => {
-    // 1. Odbiór wskazówek nawigacyjnych trasy z backendu
-    const unsubNav = backendClient.on('navigation', (guidance) => {
-      setVisitors(prev => prev.map(v => {
-        const isTarget = v.id === selectedVisitorIdRef.current || (v.destination && guidance.destination && Math.abs(v.destination.x - guidance.destination.x) < 0.2);
-        if (!isTarget) return v;
-
-        let nextWp = null;
-        if (guidance.nextWaypoint) {
-          const svgWp = worldToSvg(guidance.nextWaypoint.x, guidance.nextWaypoint.y);
-          nextWp = {
-            x: guidance.nextWaypoint.x,
-            y: guidance.nextWaypoint.y,
-            svgX: svgWp.x,
-            svgY: svgWp.y
-          };
-        }
-
-        return {
-          ...v,
-          navigationStatus: guidance.status,
-          nextWaypoint: nextWp,
-          distanceToWaypointM: guidance.distanceToWaypointM,
-          remainingDistanceM: guidance.remainingDistanceM,
-          routeId: guidance.routeId
-        };
-      }));
-
-      if (guidance.status === 'arrived') {
-        showToast('Gość dotarł do celu!');
-      } else if (guidance.status === 'blocked') {
-        showToast(`Trasa zablokowana: ${guidance.reason || 'Brak ścieżki'}`);
-      }
+    // 1. Odbiór aktualizacji statusu połączenia
+    const unsubStatus = backendClient.on('status', (st) => {
+      setBackendStatus(st);
     });
 
-    // 2. ODBIÓR AKTUALNEJ POZYCJI OSOBY NA BIEŻĄCO Z BACKENDU!
-    const unsubPos = backendClient.on('positionUpdate', (posMsg) => {
-      if (typeof posMsg.x !== 'number' || typeof posMsg.y !== 'number') return;
-      const worldX = posMsg.x;
-      const worldY = posMsg.y;
-      const svgCoords = worldToSvg(worldX, worldY);
-      const room = findRoomAtWorldCoords(worldX, worldY) || ROOMS[0];
+    // 2. Odbiór pełnego zestawu lokalizacji użytkowników z backendu: type "positions"
+    const unsubPositions = backendClient.on('positions', (usersList) => {
+      if (!Array.isArray(usersList)) return;
 
-      setVisitors(prev => {
-        const targetId = posMsg.userId || posMsg.id;
-        const exists = prev.find(v => (targetId && v.id === targetId) || (!targetId && v.id === selectedVisitorIdRef.current));
+      const mappedVisitors = usersList.map((u) => {
+        const worldX = typeof u.x === 'number' ? u.x : 0;
+        const worldY = typeof u.y === 'number' ? u.y : 0;
+        const svgCoords = worldToSvg(worldX, worldY);
+        const room = findRoomAtWorldCoords(worldX, worldY) || ROOMS[0];
 
-        if (exists) {
-          return prev.map(v => {
-            if (v.id === exists.id) {
-              return {
-                ...v,
-                x: svgCoords.x,
-                y: svgCoords.y,
-                worldX,
-                worldY,
-                room: room.id
-              };
-            }
-            return v;
-          });
-        }
-
-        // Gdy brak jeszcze gościa na liście, automatycznie tworzymy reprezentację osoby z backendu
-        const newVisitor = {
-          id: targetId || Date.now(),
-          name: posMsg.name || 'Gość (Live Backend)',
+        return {
+          id: u.username,
+          name: u.username,
           room: room.id,
           x: svgCoords.x,
           y: svgCoords.y,
           worldX,
           worldY,
-          destination: null,
-          nextWaypoint: null,
+          receivedAt: u.receivedAt,
           navigationStatus: 'idle',
-          distanceToWaypointM: null,
-          remainingDistanceM: null,
           problem: null
         };
-        return [newVisitor, ...prev];
       });
 
-      showToast(`Backend przesłał pozycję: (${worldX}m, ${worldY}m w sali ${room.name})`);
+      setVisitors(mappedVisitors);
     });
 
-    const unsubObsAck = backendClient.on('obstacleAck', () => {
-      // Potwierdzenie z backendu bez powiadomienia na ekranie
+    // 3. Odbiór stanu alarmu i wyłączonych stref: type "policy"
+    const unsubPolicy = backendClient.on('policy', (policy) => {
+      if (!policy) return;
+
+      // Aktualizacja stanu alarmu
+      if (typeof policy.alarmActive === 'boolean') {
+        setIsFireActive(policy.alarmActive);
+      }
+
+      // Aktualizacja wyłączonych stref (zones)
+      if (Array.isArray(policy.zones)) {
+        const mappedObstacles = policy.zones.map((zone) => {
+          const minX = Math.min(zone.minX, zone.maxX);
+          const maxX = Math.max(zone.minX, zone.maxX);
+          const minY = Math.min(zone.minY, zone.maxY);
+          const maxY = Math.max(zone.minY, zone.maxY);
+
+          // Konwersja metrów na współrzędne pikselowe SVG
+          const svgMinX = Math.round((minX - MUSEUM_METADATA.origin.x) / MUSEUM_METADATA.cellSizeM);
+          const svgMaxX = Math.round((maxX - MUSEUM_METADATA.origin.x) / MUSEUM_METADATA.cellSizeM);
+          const svgMinY = Math.round((minY - MUSEUM_METADATA.origin.y) / MUSEUM_METADATA.cellSizeM);
+          const svgMaxY = Math.round((maxY - MUSEUM_METADATA.origin.y) / MUSEUM_METADATA.cellSizeM);
+
+          const width = Math.max(12, svgMaxX - svgMinX);
+          const height = Math.max(12, svgMaxY - svgMinY);
+          const centerX = Math.round((svgMinX + svgMaxX) / 2);
+          const centerY = Math.round((svgMinY + svgMaxY) / 2);
+
+          const centerWorldX = (minX + maxX) / 2;
+          const centerWorldY = (minY + maxY) / 2;
+          const room = findRoomAtWorldCoords(centerWorldX, centerWorldY) || ROOMS[0];
+
+          return {
+            id: zone.id,
+            roomId: room.id,
+            roomName: room.name,
+            x: centerX,
+            y: centerY,
+            width,
+            height,
+            bounds: {
+              minX,
+              maxX,
+              minY,
+              maxY
+            },
+            reason: 'Strefa wyłączona',
+            color: '#f59e0b'
+          };
+        });
+
+        setObstacles(mappedObstacles);
+      }
     });
 
-    const unsubStatus = backendClient.on('status', (st) => {
-      setBackendStatus(st);
-    });
-
-    const unsubLog = backendClient.on('log', (logEntry) => {
-      setTrafficLogs(prev => [logEntry, ...prev.slice(0, 19)]);
+    // 4. Logi komunikacji WebSocket
+    const unsubLog = backendClient.on('log', (entry) => {
+      setTrafficLogs(prev => [entry, ...prev.slice(0, 39)]);
     });
 
     return () => {
-      unsubNav();
-      unsubPos();
-      unsubObsAck();
       unsubStatus();
+      unsubPositions();
+      unsubPolicy();
       unsubLog();
     };
   }, []);
 
+  // Gdy użytkownik jest zalogowany, automatycznie upewnij się że WS jest podłączony i pobierz stan
+  useEffect(() => {
+    if (isLoggedIn) {
+      if (backendClient.status === 'disconnected') {
+        backendClient.connect();
+      } else if (backendClient.status === 'connected') {
+        backendClient.sendSnapshot();
+      }
+    }
+  }, [isLoggedIn]);
 
-
-  // Zgłoszenie losowego problemu u danej osoby
+  // Zgłoszenie problemu u danej osoby
   const handleTriggerProblem = (id) => {
     const randomProblem = SAMPLE_PROBLEMS[Math.floor(Math.random() * SAMPLE_PROBLEMS.length)];
     setVisitors(prev => prev.map(v => {
@@ -174,75 +180,49 @@ function App() {
       }
       return v;
     }));
-    showToast(`Problem rozwiązany dla: ${target?.name || 'gościa'}!`);
+    showToast(`Problem rozwiązany dla: ${target?.name || 'gościa'}`);
   };
 
-  // Wstawianie małego prostokąta przeszkody w narysowanym miejscu sali
+  // Dodanie wyłączonej strefy (prostokąta w metrach) na mapie -> wysyłka {"type":"zone.add", ...}
   const handleAddObstacle = (obstacleData) => {
-    let reason = 'Mokra podłoga';
-    let icon = '';
-    let color = '#f59e0b';
+    // Oblicz współrzędne w metrach na podstawie narysowanych pikseli SVG
+    const rawMinX = MUSEUM_METADATA.origin.x + obstacleData.minX * MUSEUM_METADATA.cellSizeM;
+    const rawMaxX = MUSEUM_METADATA.origin.x + obstacleData.maxX * MUSEUM_METADATA.cellSizeM;
+    const rawMinY = MUSEUM_METADATA.origin.y + obstacleData.minY * MUSEUM_METADATA.cellSizeM;
+    const rawMaxY = MUSEUM_METADATA.origin.y + obstacleData.maxY * MUSEUM_METADATA.cellSizeM;
 
-    if (activeHazardType === 'custom' && customHazardText.trim()) {
-      reason = customHazardText.trim();
-      icon = '';
-      color = '#38bdf8';
-    } else {
-      const preset = DEFAULT_HAZARDS.find(h => h.id === activeHazardType) || DEFAULT_HAZARDS[0];
-      reason = preset.name;
-      icon = '';
-      color = preset.color;
+    let minX = Number(Math.min(rawMinX, rawMaxX).toFixed(2));
+    let maxX = Number(Math.max(rawMinX, rawMaxX).toFixed(2));
+    let minY = Number(Math.min(rawMinY, rawMaxY).toFixed(2));
+    let maxY = Number(Math.max(rawMinY, rawMaxY).toFixed(2));
+
+    // Zapewnienie minimalnego rozmiaru prostokąta (minX < maxX oraz minY < maxY)
+    if (maxX - minX < 0.4) {
+      maxX = Number((minX + 0.6).toFixed(2));
+    }
+    if (maxY - minY < 0.4) {
+      maxY = Number((minY + 0.6).toFixed(2));
     }
 
-    const centerWorld = svgToWorld(obstacleData.x, obstacleData.y);
-    const widthM = Number(((obstacleData.width || 34) * 0.2).toFixed(2));
-    const heightM = Number(((obstacleData.height || 22) * 0.2).toFixed(2));
-    const minX = Number((centerWorld.x - widthM / 2).toFixed(2));
-    const maxX = Number((centerWorld.x + widthM / 2).toFixed(2));
-    const minY = Number((centerWorld.y - heightM / 2).toFixed(2));
-    const maxY = Number((centerWorld.y + heightM / 2).toFixed(2));
-
-    const newObs = {
-      id: `obs-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      roomId: obstacleData.roomId,
-      roomName: obstacleData.roomName,
-      x: obstacleData.x,
-      y: obstacleData.y,
-      worldX: centerWorld.x,
-      worldY: centerWorld.y,
-      width: Math.round(obstacleData.width || 34),
-      height: Math.round(obstacleData.height || 22),
-      widthM,
-      heightM,
-      bounds: { minX, maxX, minY, maxY },
-      reason,
-      icon,
-      color
-    };
-
-    setObstacles(prev => [...prev, newObs]);
-
-    // NATYCHMIAST PRZESYŁAMY DOKŁADNE DANE STREFY WYŁĄCZONEJ DO BACKENDU!
-    backendClient.sendObstacle(newObs);
+    // Wysłanie komendy dodania strefy do serwera (backend przypisuje UUID i odsyła policy)
+    backendClient.sendAddZone(minX, minY, maxX, maxY);
+    // Zgodnie z wytycznymi użytkownika: brak powiadomienia toast po dodaniu strefy
   };
 
-  // Usunięcie przeszkody (otwarcie strefy)
+  // Usunięcie wyłączonej strefy -> wysyłka {"type":"zone.remove","id":...}
   const handleRemoveObstacle = (id) => {
-    setObstacles(prev => prev.filter(o => o.id !== id));
-    // Informujemy backend o otwarciu obszaru:
-    backendClient.sendRemoveObstacle(id);
+    backendClient.sendRemoveZone(id);
     showToast('Usunięto strefę — obszar odblokowany.');
   };
 
-  // Włączenie / wyłączenie alarmu pożarowego (Sygnał do backendu – to serwer kieruje gości)
+  // Włączenie / wyłączenie alarmu pożarowego -> wysyłka {"type":"alarm","active":...}
   const handleToggleFire = () => {
-    if (!isFireActive) {
-      setIsFireActive(true);
-      // Wysyłamy sygnał do backendu – to backend wyznacza trasy ewakuacji dla gości!
-      backendClient.sendFireAlarm(true);
-      showToast('Sygnał alarmu pożarowego wysłany do backendu! Serwer kieruje gości do wyjść.');
+    const nextState = !isFireActive;
+    backendClient.sendAlarm(nextState);
 
-      // Komunikat głosowy
+    if (nextState) {
+      showToast('Sygnał alarmu pożarowego wysłany do backendu');
+
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance('Uwaga! Alarm pożarowy w Field Museum. Prosimy udać się do wyjść ewakuacyjnych.');
@@ -250,15 +230,32 @@ function App() {
         window.speechSynthesis.speak(msg);
       }
     } else {
-      setIsFireActive(false);
-      // Informujemy backend o odwołaniu alarmu
-      backendClient.sendFireAlarm(false);
-      showToast('Alarm pożarowy odwołany — wysłano sygnał do backendu.');
+      showToast('Alarm pożarowy odwołany');
 
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel();
       }
     }
+  };
+
+  // Zmiana adresu hosta serwera w trakcie pracy
+  const handleSaveServerHost = (e) => {
+    e.preventDefault();
+    const updated = backendClient.setHost(serverHostInput);
+    setServerHost(updated);
+    setServerHostInput(updated);
+    showToast(`Zaktualizowano adres serwera: ${updated}`);
+  };
+
+  // Wylogowanie administratora
+  const handleLogout = async () => {
+    try {
+      await backendClient.logout();
+    } catch {}
+    setIsLoggedIn(false);
+    setVisitors([]);
+    setObstacles([]);
+    showToast('Wylogowano z panelu administratora');
   };
 
   // Jeśli użytkownik nie jest jeszcze zalogowany, wyświetl ekran logowania
@@ -268,10 +265,14 @@ function App() {
         onLoginSuccess={(user) => {
           setIsLoggedIn(true);
           setLoggedInUser(user);
+          setServerHost(backendClient.getHost());
         }}
       />
     );
   }
+
+  const isConnected = backendStatus === 'connected';
+  const isConnecting = backendStatus === 'connecting';
 
   return (
     <div className={`app-root ${isFireActive ? 'fire-mode' : ''}`}>
@@ -282,23 +283,42 @@ function App() {
         </div>
       )}
 
-      {/* Górny pasek */}
+      {/* Górny pasek nawigacji */}
       <header className="main-header">
         <div className="header-brand">
           <h1>Admin Panel</h1>
         </div>
 
         <div className="header-actions">
+          {/* Przycisk statusu i konfiguracji serwera (zmienna IP) */}
+          <button
+            type="button"
+            className={`btn-server-indicator ${backendStatus}`}
+            onClick={() => {
+              setServerHostInput(backendClient.getHost());
+              setShowServerModal(true);
+            }}
+            title="Kliknij, aby zmienić adres IP serwera lub sprawdzić połączenie"
+          >
+            <span className={`server-status-dot ${backendStatus}`} />
+            <Server size={14} className="server-btn-icon" />
+            <span className="server-label">
+              Serwer: <strong>{serverHost}</strong>
+            </span>
+          </button>
+
+          {/* Plakietka zalogowanego użytkownika */}
           {loggedInUser && (
-            <span className="badge-user-logged">{loggedInUser}</span>
+            <span className="badge-user-logged">
+              {loggedInUser}
+            </span>
           )}
+
+          {/* Przycisk wylogowania */}
           <button
             type="button"
             className="btn-logout-header"
-            onClick={() => {
-              setIsLoggedIn(false);
-              showToast('Wylogowano z panelu');
-            }}
+            onClick={handleLogout}
             title="Wyloguj się z panelu administratora"
           >
             Wyloguj
@@ -306,83 +326,106 @@ function App() {
         </div>
       </header>
 
-      {/* Modal: Konsola komunikacji WebSocket z backendem */}
-      {showWsConsole && (
-        <div className="ws-modal-backdrop" onClick={() => setShowWsConsole(false)}>
+      {/* Modal konfiguracji adresu IP / hosta serwera */}
+      {showServerModal && (
+        <div className="ws-modal-backdrop" onClick={() => setShowServerModal(false)}>
           <div className="ws-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="ws-modal-header">
-              <h3>Konsola komunikacji z backendem (WebSocket)</h3>
+              <div className="modal-title-with-icon">
+                <Server size={20} color="#38bdf8" />
+                <h3>Konfiguracja połączenia z serwerem</h3>
+              </div>
               <button
                 type="button"
                 className="btn-close-modal"
-                onClick={() => setShowWsConsole(false)}
+                onClick={() => setShowServerModal(false)}
                 aria-label="Zamknij"
               >
-                &times;
+                <X size={18} />
               </button>
             </div>
 
             <div className="ws-modal-body">
-              <div className="ws-config-bar">
-                <label>Adres WebSocket:</label>
-                <input
-                  type="text"
-                  value={wsUrlInput}
-                  onChange={(e) => setWsUrlInput(e.target.value)}
-                  placeholder="ws://localhost:8081/ws/position"
-                  className="input-ws-url"
-                />
-                <button
-                  type="button"
-                  className="btn-ws-reconnect"
-                  onClick={() => backendClient.setUrl(wsUrlInput)}
-                >
-                  Połącz
-                </button>
-              </div>
+              {/* Formularz zmiany adresu IP serwera */}
+              <form onSubmit={handleSaveServerHost} className="server-config-form">
+                <label htmlFor="modal-server-input">Adres serwera backendu (IP / Host:Port):</label>
+                <div className="server-input-row">
+                  <input
+                    id="modal-server-input"
+                    type="text"
+                    value={serverHostInput}
+                    onChange={(e) => setServerHostInput(e.target.value)}
+                    placeholder="np. 192.168.1.50:8081 lub localhost:8081"
+                    className="input-ws-url"
+                  />
+                  <button type="submit" className="btn-ws-reconnect">
+                    Zapisz i połącz
+                  </button>
+                </div>
+                <span className="server-config-hint">
+                  Zmienna konfiguracji serwera jest zapisywana lokalnie i używana dla wszystkich zapytań HTTP i WebSocket (/ws/admin).
+                </span>
+              </form>
 
+              {/* Podsumowanie stanu połączenia */}
               <div className="ws-status-summary">
-                <span>Status połączenia: <strong>{backendStatus}</strong></span>
-                <span>Protokół: <code>ws://localhost:8081/ws/position (JSON)</code></span>
+                <div className="status-item">
+                  <span className="status-label">Status połączenia:</span>
+                  <span className={`status-badge ${backendStatus}`}>
+                    {isConnected ? 'Połączono (Online)' : isConnecting ? 'Łączenie...' : 'Rozłączono (Offline/Symulacja)'}
+                  </span>
+                </div>
+                <div className="status-item">
+                  <span className="status-label">Kanał WebSocket:</span>
+                  <code>{backendClient.getWsUrl()}</code>
+                </div>
               </div>
 
+              {/* Przyciski operacyjne */}
               <div className="ws-test-buttons-row">
                 <button
                   type="button"
                   className="btn-test-action"
                   onClick={() => {
-                    backendClient.simulateIncomingPosition(-0.5, 42.0, 'Anna (Telefon iOS)');
-                    showToast('Symulacja: Backend przysłał aktualizację pozycji Anny (-0.5m, 42.0m)');
+                    backendClient.sendSnapshot();
+                    showToast('Wysłano zapytanie o stan (snapshot) do serwera');
                   }}
-                  title="Symuluje nadejście pozycji z backendu w czasie rzeczywistym"
+                  title="Wysyła ramkę {'type':'snapshot'} do backendu"
                 >
-                  Symuluj: Backend przesyła ruch Anny (-0.5m, 42.0m)
+                  <RefreshCw size={14} />
+                  Pobierz stan z serwera (snapshot)
                 </button>
                 <button
                   type="button"
                   className="btn-test-action"
                   onClick={() => {
-                    backendClient.simulateIncomingPosition(-58.0, 7.5, 'Jan (Czujnik UWB)');
-                    showToast('Symulacja: Backend przysłał nową osobę Jana w sali Africa (-58.0m, 7.5m)');
+                    backendClient.simulateUser('demo@fieldmuseum.org', 0.2, 5.0);
+                    showToast('Dodano pozycję testową demo@fieldmuseum.org (0.2m, 5.0m)');
                   }}
-                  title="Symuluje zgłoszenie nowej osoby przez backend"
+                  title="Symuluje zgłoszenie pozycji użytkownika"
                 >
-                  Symuluj: Backend przesyła Jana w Africa (-58.0m, 7.5m)
+                  <Activity size={14} />
+                  Symuluj pozycję testową
                 </button>
               </div>
 
+              {/* Podgląd ramek JSON komunikacji w czasie rzeczywistym */}
               <div className="ws-traffic-feed-header">
-                <strong>Ostatnie ramki JSON w czasie rzeczywistym (TX = wysłano, RX = odebrano):</strong>
+                <strong>Dziennik komunikacji z serwerem (TX = wysłano, RX = odebrano, SYS = system):</strong>
               </div>
               <div className="ws-traffic-terminal">
                 {trafficLogs.length === 0 ? (
-                  <div className="traffic-empty">Brak wiadomości. Oczekiwanie na ramki JSON z backendu lub dodanie strefy wyłączonej.</div>
+                  <div className="traffic-empty">
+                    Brak zdarzeń. Oczekiwanie na ramki z serwera lub akcje administratora.
+                  </div>
                 ) : (
                   trafficLogs.map(log => (
                     <div key={log.id} className={`log-entry direction-${log.direction.toLowerCase()}`}>
                       <span className="log-badge">{log.direction}</span>
                       <span className="log-time">[{log.time}]</span>
-                      <pre className="log-payload">{typeof log.data === 'object' ? JSON.stringify(log.data, null, 2) : log.data}</pre>
+                      <pre className="log-payload">
+                        {typeof log.data === 'object' ? JSON.stringify(log.data, null, 2) : log.data}
+                      </pre>
                     </div>
                   ))
                 )}
@@ -391,12 +434,12 @@ function App() {
 
             <div className="ws-modal-footer">
               <span className="ws-footer-hint">
-                Zgodne w 100% z <code>WEBSOCKET.md</code> i <code>NAVIGATION.md</code> w repozytorium backendu.
+                Zgodne w 100% z <code>INTEGRATION.md</code> (kontrakt panelu administratora).
               </span>
               <button
                 type="button"
                 className="btn-close-modal-footer"
-                onClick={() => setShowWsConsole(false)}
+                onClick={() => setShowServerModal(false)}
               >
                 Zamknij
               </button>

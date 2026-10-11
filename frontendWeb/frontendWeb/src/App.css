@@ -1380,5 +1380,179 @@ body {
   color: #ffffff;
 }
 
+/* Wskaźnik i przycisk konfiguracji serwera w nagłówku */
+.btn-server-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid var(--border);
+  color: #cbd5e1;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-server-indicator:hover {
+  border-color: #38bdf8;
+  background: rgba(30, 41, 59, 0.9);
+  color: #ffffff;
+}
+
+.server-btn-icon {
+  color: #94a3b8;
+}
+
+.server-label strong {
+  color: #38bdf8;
+  font-family: monospace;
+  font-size: 12.5px;
+}
+
+.server-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.server-status-dot.connected {
+  background-color: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.8);
+}
+
+.server-status-dot.connecting {
+  background-color: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.8);
+  animation: pulseDot 1s infinite alternate;
+}
+
+.server-status-dot.disconnected {
+  background-color: #ef4444;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+}
+
+@keyframes pulseDot {
+  from { opacity: 0.4; }
+  to { opacity: 1; }
+}
+
+/* Formularz konfiguracji serwera w oknie modalnym */
+.modal-title-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-title-with-icon h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #f8fafc;
+}
+
+.server-config-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.server-config-form label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.server-input-row {
+  display: flex;
+  gap: 10px;
+}
+
+.server-input-row .input-ws-url {
+  flex: 1;
+}
+
+.server-config-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.status-label {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.status-badge {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.status-badge.connected {
+  background: #14532d;
+  color: #4ade80;
+  border: 1px solid #16a34a;
+}
+
+.status-badge.connecting {
+  background: #78350f;
+  color: #fde047;
+  border: 1px solid #d97706;
+}
+
+.status-badge.disconnected {
+  background: #451a1a;
+  color: #fca5a5;
+  border: 1px solid #dc2626;
+}
+
+/* Styl podpowiedzi i przycisku offline na ekranie logowania */
+.login-input-subhint {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.error-text-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.btn-offline-bypass {
+  align-self: flex-start;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid #38bdf8;
+  color: #38bdf8;
+  padding: 6px 12px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-offline-bypass:hover {
+  background: #38bdf8;
+  color: #0f172a;
+}
+
+
 
 

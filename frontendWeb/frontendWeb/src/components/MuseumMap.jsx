@@ -224,14 +224,20 @@ export default function MuseumMap({
 
     // Jeśli użytkownik tylko kliknął (ruch < 6px) -> wstawiamy domyślny prostokąt 34x22
     if (rawW < 6 && rawH < 6) {
+      const defW = 34;
+      const defH = 22;
       if (onAddObstacle) {
         onAddObstacle({
           roomId: room.id,
           roomName: room.name,
           x: drawingBox.startX,
           y: drawingBox.startY,
-          width: 34,
-          height: 22
+          width: defW,
+          height: defH,
+          minX: Math.round(drawingBox.startX - defW / 2),
+          maxX: Math.round(drawingBox.startX + defW / 2),
+          minY: Math.round(drawingBox.startY - defH / 2),
+          maxY: Math.round(drawingBox.startY + defH / 2)
         });
       }
     } else {
@@ -248,7 +254,11 @@ export default function MuseumMap({
           x: centerX,
           y: centerY,
           width,
-          height
+          height,
+          minX,
+          maxX,
+          minY,
+          maxY
         });
       }
     }

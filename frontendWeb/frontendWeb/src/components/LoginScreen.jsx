@@ -1,24 +1,58 @@
 import React, { useState } from 'react';
-import { Lock, User, Shield, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Lock, User, Shield, AlertCircle, Eye, EyeOff, Server } from 'lucide-react';
+import { backendClient } from '../services/navigationBackend';
 
 export default function LoginScreen({ onLoginSuccess }) {
+  const [serverHost, setServerHost] = useState(backendClient.getHost() || 'localhost:8081');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [canOfflineBypass, setCanOfflineBypass] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleServerChange = (e) => {
+    const val = e.target.value;
+    setServerHost(val);
+    backendClient.setHost(val);
+    if (errorMessage) setErrorMessage('');
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Sprawdzenie: jeśli login LUB hasło są puste -> błąd
     if (!username.trim() || !password.trim()) {
-      setErrorMessage('Nieprawidłowe logowanie, spróbuj ponownie');
+      setErrorMessage('Wprowadź login (email) oraz hasło');
       return;
     }
 
-    // Jeśli cokolwiek wpisano w oba pola -> sukces logowania
+    setIsLoading(true);
     setErrorMessage('');
-    onLoginSuccess(username.trim());
+    setCanOfflineBypass(false);
+
+    try {
+      // Zapisz aktualny adres serwera przed logowaniem
+      backendClient.setHost(serverHost);
+
+      // Wywołanie autentykacji HTTP (GET /api/auth/csrf + POST /api/auth/login)
+      await backendClient.login(username.trim(), password);
+
+      setIsLoading(false);
+      onLoginSuccess(username.trim());
+    } catch (err) {
+      setIsLoading(false);
+      const msg = err?.message || 'Błąd logowania do serwera.';
+      setErrorMessage(msg);
+      // Umożliwiamy wejście offline w przypadku braku połączenia z backendem
+      setCanOfflineBypass(true);
+    }
+  };
+
+  // Wejście w trybie demonstracyjnym / offline (gdy backend nie jest jeszcze uruchomiony)
+  const handleOfflineLogin = () => {
+    backendClient.setHost(serverHost);
+    backendClient.account = { email: username.trim() || 'admin@fieldmuseum.org', role: 'ADMIN' };
+    onLoginSuccess(username.trim() || 'admin@fieldmuseum.org');
   };
 
   return (
@@ -37,27 +71,59 @@ export default function LoginScreen({ onLoginSuccess }) {
         {errorMessage && (
           <div className="login-error-alert" role="alert">
             <AlertCircle size={20} className="error-icon" />
-            <span>{errorMessage}</span>
+            <div className="error-text-container">
+              <span>{errorMessage}</span>
+              {canOfflineBypass && (
+                <button
+                  type="button"
+                  className="btn-offline-bypass"
+                  onClick={handleOfflineLogin}
+                >
+                  Kontynuuj w trybie symulacji (offline)
+                </button>
+              )}
+            </div>
           </div>
         )}
 
         {/* Formularz logowania */}
         <form onSubmit={handleSubmit} className="login-form" noValidate>
+          {/* Pole Adres serwera */}
+          <div className="login-form-group">
+            <label htmlFor="login-server-host">Adres serwera (IP / Host:Port):</label>
+            <div className="login-input-wrapper">
+              <Server size={18} className="input-icon" aria-hidden="true" />
+              <input
+                id="login-server-host"
+                type="text"
+                className="login-input"
+                placeholder="np. 192.168.1.100:8081 lub localhost:8081"
+                value={serverHost}
+                onChange={handleServerChange}
+                disabled={isLoading}
+              />
+            </div>
+            <span className="login-input-subhint">
+              Domyślny port backendu to :8081. Adres jest zapamiętywany.
+            </span>
+          </div>
+
           {/* Pole Login */}
           <div className="login-form-group">
-            <label htmlFor="login-username">Login:</label>
+            <label htmlFor="login-username">E-mail / Login:</label>
             <div className="login-input-wrapper">
               <User size={18} className="input-icon" aria-hidden="true" />
               <input
                 id="login-username"
                 type="text"
                 className={`login-input ${errorMessage && !username.trim() ? 'input-error' : ''}`}
-                placeholder="Wpisz login..."
+                placeholder="admin@fieldmuseum.org"
                 value={username}
                 onChange={(e) => {
                   setUsername(e.target.value);
                   if (errorMessage) setErrorMessage('');
                 }}
+                disabled={isLoading}
                 autoFocus
                 autoComplete="username"
               />
@@ -79,6 +145,7 @@ export default function LoginScreen({ onLoginSuccess }) {
                   setPassword(e.target.value);
                   if (errorMessage) setErrorMessage('');
                 }}
+                disabled={isLoading}
                 autoComplete="current-password"
               />
               <button
@@ -87,6 +154,7 @@ export default function LoginScreen({ onLoginSuccess }) {
                 onClick={() => setShowPassword(!showPassword)}
                 title={showPassword ? 'Ukryj hasło' : 'Pokaż hasło'}
                 aria-label={showPassword ? 'Ukryj hasło' : 'Pokaż hasło'}
+                disabled={isLoading}
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
@@ -94,8 +162,8 @@ export default function LoginScreen({ onLoginSuccess }) {
           </div>
 
           {/* Przycisk Zaloguj */}
-          <button type="submit" className="btn-login-submit">
-            Zaloguj
+          <button type="submit" className="btn-login-submit" disabled={isLoading}>
+            {isLoading ? 'Łączenie z serwerem...' : 'Zaloguj'}
           </button>
         </form>
       </div>
