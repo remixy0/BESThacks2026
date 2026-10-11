@@ -35,6 +35,10 @@ Potwierdzenie wraca tylko do nadawcy:
 Przy aktywnym celu po potwierdzeniu pozycji przychodzi także wiadomość
 `type: "navigation"` z `nextWaypoint` — punktem przed następną zmianą kierunku.
 Wybór celu: `{"type":"destination","x":0.1,"y":-61.9}`.
+Zgłoszenie pomocy: `{"type":"help"}` albo `{"type":"help","x":-0.5,"y":51.9}`.
+Aplikacja otrzymuje `help.accepted`, panel administratora `help.request`.
+Szczegóły i ograniczenia: [HELP_REQUESTS.md](HELP_REQUESTS.md).
+
 Anulowanie: `{"type":"cancel"}`. Punkty muszą należeć do dostępnej części mapy,
 aby nawigacja mogła wyznaczyć trasę.
 

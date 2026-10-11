@@ -24,7 +24,10 @@ Nie wysyła emaila ani roli w wiadomościach pozycji. Backend odczytuje tożsamo
 
 ## Połączenia
 
-- Użytkownik: `ws://localhost:8081/ws/position` — dotychczasowe komendy `position`, `destination`, `cancel`.
+- Użytkownik: `ws://localhost:8081/ws/position` — komendy `position`, `destination`, `cancel`, `help`.
+
+Panel administratora otrzymuje również zgłoszenia pomocy `help.request` na `/ws/admin`.
+Opis integracji: [HELP_REQUESTS.md](HELP_REQUESTS.md).
 - Administrator: `ws://localhost:8081/ws/admin` — obserwacja użytkowników i poniższe komendy.
 - Administrator może też korzystać z własnej nawigacji przez `/ws/position`.
 - Zwykły użytkownik otrzyma HTTP 403 przy próbie połączenia z `/ws/admin`; niezalogowany HTTP 401.

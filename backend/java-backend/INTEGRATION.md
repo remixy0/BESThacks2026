@@ -52,8 +52,12 @@ IP należy zastąpić rzeczywistym adresem środowiska. Dla środowiska z TLS u�
 
 | Ścieżka | Dostęp | Klient → backend | Backend → klient |
 |---|---|---|---|
-| `/ws/position` | `USER` lub `ADMIN` | `position`, `destination`, `cancel` | `position`, `navigation`, `policy`, `error` |
-| `/ws/admin` | Tylko `ADMIN` | `snapshot`, `alarm`, `zone.add`, `zone.remove` | `positions`, `policy`, `error` |
+| `/ws/position` | `USER` lub `ADMIN` | `position`, `destination`, `cancel`, `help` | `position`, `navigation`, `policy`, `help.accepted`, `error` |
+| `/ws/admin` | Tylko `ADMIN` | `snapshot`, `alarm`, `zone.add`, `zone.remove` | `positions`, `policy`, `help.request`, `error` |
+
+Zgłoszenia pomocy: aplikacja wysyła `{"type":"help"}` (opcjonalnie z `x`, `y`),
+backend odpowiada `help.accepted` i przekazuje `help.request` do podłączonych administratorów.
+Format pól, przykłady i ograniczenia dostarczania: [HELP_REQUESTS.md](HELP_REQUESTS.md).
 
 To zwykłe WebSockety z tekstowymi wiadomościami JSON — bez STOMP, SockJS i nazw tematów.
 Jedna wiadomość zawiera jeden obiekt JSON. Swagger służy do HTTP; nie jest klientem WS.
@@ -590,6 +594,7 @@ być poprawna, ale droga jest niedostępna. Kieruj logiką po `code` lub `reason
 |---|---|---|
 | `INVALID_POSITION` | `error` użytkownika | Niepoprawny JSON, pola, typy lub liczby pozycji/celu |
 | `UNSUPPORTED_MESSAGE` | `error` użytkownika | Nieobsługiwana komenda; dotyczy też części niepoprawnych wariantów `cancel` |
+| `INVALID_HELP` | `error` użytkownika | Niepoprawne pola zgłoszenia `help`; wymagane samo `type` lub `type`, `x`, `y` |
 | `DESTINATION_OUTSIDE_MAP` | `error` użytkownika | Cel poza mapą |
 | `DESTINATION_BLOCKED` | `error`, `navigation.reason` | Cel w przeszkodzie, na jej granicy lub w strefie |
 | `POSITION_OUTSIDE_MAP` | `navigation.reason` | Aktualna pozycja poza mapą |

@@ -7,6 +7,8 @@ import org.springframework.web.socket.handler.ConcurrentWebSocketSessionDecorato
 import restservice.navigation.NavigationService;
 import tools.jackson.databind.ObjectMapper;
 import java.util.*;
+import java.time.Instant;
+import restservice.navigation.MapPoint;
 
 /** Serializes policy changes with position updates; never broadcasts to expired sessions. */
 @Component
@@ -52,6 +54,15 @@ public class SocketHub {
     }
     public void sendAdmin(String id, Object message) {
         synchronized (navigation) { deliver(admins.get(id), message, true); }
+    }
+
+    public void requestHelp(WebSocketSession session, MapPoint position) {
+        synchronized (navigation) {
+            var request = new HelpRequest("help.request", UUID.randomUUID().toString(),
+                    session.getPrincipal().getName(), position, Instant.now().toString());
+            for (String id : List.copyOf(admins.keySet())) sendAdmin(id, request);
+            sendUser(session.getId(), new HelpAccepted("help.accepted", request.id(), request.receivedAt()));
+        }
     }
 
     private void deliver(WebSocketSession session, Object message, boolean admin) {
@@ -112,4 +123,6 @@ public class SocketHub {
     }
 
     private record Positions(String type, List<PositionStore.Position> users) {}
+    private record HelpRequest(String type, String id, String username, MapPoint position, String receivedAt) {}
+    private record HelpAccepted(String type, String id, String receivedAt) {}
 }
