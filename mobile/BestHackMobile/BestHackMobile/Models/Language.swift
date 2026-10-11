@@ -19,6 +19,14 @@ enum AppLanguage: String, CaseIterable, Identifiable {
 
     var short: String { rawValue.uppercased() }
 
+    /// The country flag shown next to the language.
+    var flag: String {
+        switch self {
+        case .polish: "🇵🇱"
+        case .english: "🇬🇧"
+        }
+    }
+
     /// ISO 639-3 code for ElevenLabs speech-to-text.
     var speechCode: String {
         switch self {

@@ -70,8 +70,8 @@ read by Claude yet (access wasn't granted). The backend contract the app expects
   don't add `NSAllowsLocalNetworking` next to it, iOS then ignores ArbitraryLoads).
 - **Secrets:** `BestHackMobile/Config/Secrets.plist` (git-ignored) holds
   - `ELEVENLABS_API_KEY`
-  - `BACKEND_URL` (can also be set in the app; the in-app value wins)
-  - `ROUTE_API_URL`
+  - `BACKEND_HOST`: the backend's IP (e.g. `192.168.1.20`, http + port 8081 assumed) or full URL; empty = local data only. Settings → Server wins. Old `BACKEND_URL` still read.
+  - (`ROUTE_API_URL` is no longer used: routes come from the backend WebSocket or the bundled grid.)
   - `ROUTE_Y_AXIS` (applies to routes, beacon positions and the calibration spot)
   - `CALIBRATION_POINT` ("x, y, facingDegrees")
 
@@ -85,7 +85,7 @@ read by Claude yet (access wasn't granted). The backend contract the app expects
 | `App/RootView.swift` | `AppModel.shared` (owns `GuideModel`, `VisitLog`, `AccountStore`, `calibrationDone`; a singleton so no throwaway copies). Phases: login → welcome (first time) → calibration (every launch) → museum. Starts/stops the guide with scene phase, keeps the screen on in the museum, preloads 3D models + beacon list at launch. |
 | `Design/Theme.swift` | **Design system:** colours (`accent`, `accentSoft`, `accentText`, `coral`, `coralText`, `mint`, `mintText`, `amber`, `red`, `redText`, `ink`, `inkSoft`, `page`, `card`, `cardSunken`, `line`, `lineStrong`), system fonts (`Theme.title(.title)` etc., Dynamic Type), `AppButtonStyle` (primary, secondary, danger, secondaryDanger, quiet), `RoundIconButtonStyle`, `CardButtonStyle`, `.card()`, `.floatingPanel()`, `ProgressLine`, `Chip`, `Eyebrow`, `ExhibitThumbnail`. |
 | `Design/BloopOrb.swift` | The app's mark (sound source with rings; ripples only while talking). Replaced the cartoon mascot. |
-| `Features/Login/LoginView.swift` | Email + password → `AccountStore.signIn`; *Try the demo* → `signInDemo()` (test@test.test / test, always continues); server URL editor. |
+| `Features/Login/LoginView.swift` | Email + password → `AccountStore.signIn` (or *Create account* → `register`); *Try the demo* → `signInDemo()`; server IP editor; language switch with flags. |
 | `Features/Welcome/WelcomeView.swift` | 4-step intro: hello → mode (`ChoiceCard`) → AirPods left/right test → beacons (asks location permission). |
 | `Features/Calibration/CalibrationView.swift` | Stand on the spot, face front, tap Calibrate, hold still 3 s (`guide.beginCalibration()` → `finishCalibration()`). Shows AirPods + beacon status. Listening mode: spoken instructions, bottom half is one big button. |
 | `Features/Map/MapScreen.swift` | Map mode screen: map layer, top row (`MapStyleSlider` 3D/Look/2D + settings), auto-hiding `NoticeBanner`, `GuidePanel`, sheets. `GuideEvents` = tiny view that owns all haptic triggers + marks visits (so guide events don't redraw the screen). Routes to `ListenModeView` in listening mode. |
@@ -105,7 +105,7 @@ read by Claude yet (access wasn't granted). The backend contract the app expects
 | `Audio/VoiceRecorder.swift` | AVAudioRecorder (16 kHz AAC) with metering, adaptive speech threshold, mic permission (`AVAudioApplication`). |
 | `Services/ElevenLabs/SpeechCache.swift` | **TTS cache.** `SpeechCache.shared`: every ElevenLabs sentence is saved as raw PCM16 24 kHz in Library/Caches/ElevenLabsSpeech, key = SHA-256 of voice + model + speed + text ("v1|pcm_24000|…"; bump "v1" if the request/voice settings change). Saved → played from the phone, no request; in-flight downloads are shared (`SpeechClip`, many listeners); a started download always finishes and is saved even if playback stops; LRU trim above 250 MB. `ElevenLabsTTS.stream` reads through it, `ElevenLabsTTS.download` does the actual request. GuideModel: stories are spoken as two sentences ("Name." + story) so the story recording is shared; `speakNext` prefetches the next queued sentence; `downloadStories()` / `storyDownload` / `savedStoryCount()` back Settings › Voice › "Zapamiętane nagrania". STT is never cached. |
 | `Services/ElevenLabs/ElevenLabsSTT.swift` | `POST /v1/speech-to-text`, model `scribe_v2` (falls back to `scribe_v1` on 400/422), `language_code` pol/eng. Key needs Speech to Text permission. |
-| `Models/AccountStore.swift` | Account (UserDefaults `account.current`), token (Keychain), server override (UserDefaults `backend.url`), `backend` client. |
+| `Models/AccountStore.swift` | Account (UserDefaults `account.current`: email, role, `isLocal`), email+password in Keychain (`Backend`/`login`) for automatic re-login, server override (UserDefaults `backend.url`). `signIn`: 401 → wrong password; server problems → **failsafe**: signed in locally (`isLocal`), `notice` shown on the map. `socketSession()` → `.ready(client)` / `.noServer` / `.unavailable` (re-logs in when the session expired; stops after a 401). |
 | `Models/CalibrationSpot.swift` | Calibration spot (point, facing, spoken name). Default South Entrance (0.2, 56) facing north; Secrets `CALIBRATION_POINT`; backend may override. |
 | `Models/VisitLog.swift` | Visited exhibits, persisted in UserDefaults `visits.exhibits`. |
 | `Models/UserMode.swift` | `.standard` ("With the map") / `.blind` ("Just listening"). |
@@ -116,7 +116,9 @@ read by Claude yet (access wasn't granted). The backend contract the app expects
 | `Services/Beacons/BeaconPositioner.swift` | Pure maths: RSSI smoothing (EMA 0.35, stale after 4 s), log-distance model (n = 2.3, per-beacon calibration offsets), weighted Gauss–Newton trilateration (≥2 beacons), circle projection (1 beacon), calibration offsets (half shared median, half per beacon, ±15 dB). |
 | `Services/Beacons/BeaconDirectory.swift` | Flexible decoder for the backend's beacon list (+ optional calibration spot). Lookup by major/minor (or minor only). |
 | `Services/Location/PositionService.swift` | Beacons → filtered position (max step 1.8 m/s + 1.5 m, gain by accuracy), `source` (.beacons/.lastKnown/.demo), status text, directory cache (UserDefaults `beacons.directory`), offsets (UserDefaults `beacons.offsets`), `calibrate()`, demo walk positions. |
-| `Services/Backend/BackendClient.swift` | Login + beacons, path fallbacks on 404, bearer token. |
+| `Services/Backend/BackendClient.swift` | Backend HTTP per INTEGRATION.md: session + CSRF (`/api/auth/csrf` → `/api/auth/login`, cookie JSESSIONID in `HTTPCookieStorage.shared`), `register`, `me`, `logout`, `webSocketRequest()` (copies the cookie onto the WS handshake), `isServerProblem(error)` (decides failsafe), `url(from:)` (bare IP → http://IP:8081). Beacons: tries `/api/beacons` (not in the contract). |
+| `Services/Backend/PositionSocket.swift` | `/ws/position` WebSocket (`guide.server`): keeps position + destination and re-sends them after every reconnect; position ≤3/s and ≥ every 2 s; one receive loop by `type` (`navigation`, `policy`, `error`); ping heartbeat; reconnect 2→30 s; 401/403/1008 → `onSessionRejected` → re-login. `state`: off/noServer/connecting/online/offline. |
+| `Services/Routing/MuseumGrid.swift` | **Local failsafe router.** Loads `Resources/Museum/field-museum-main-level.grid.json` (the backend's own map, 0.2 m cells, `1` = walkable; x = model X, y = model Z), A* (8 neighbours, no corner cutting) + string-pulling; avoids `policy.zones` (+0.3 m). `approaches[exhibitKey]` (POI `sourceId` = our key), `unreachable` (approach null; in the 11 Oct map every exhibit is reachable, only the restroom isn't), `exits`. Keep the JSON identical to `backend/java-backend/src/main/resources/maps/`. |
 | `Services/Haptics.swift` | Core Haptics patterns for listening mode: `attention` (3 knocks), `selected` (long buzz), `confirmed` (long-short-long), `warning`. |
 | `Services/` | `HeadTracker` (AirPods; `yaw` not observed; `session` bumps on reconnect), `KeychainStore` (generic service/account), `MuseumAssets` (**caches** loaded entities, returns clones; `preload`), `Routing/`, `ElevenLabs/`. |
 | `Resources/` | `Assets.xcassets` (`Exhibits/Exhibit-<key>`), `Museum/` (`MuseumMap.usdz`, `Artifacts/*.usdz`, info JSON). |
@@ -177,6 +179,47 @@ read by Claude yet (access wasn't granted). The backend contract the app expects
 - **Behaviour:** ticks 20×/s. Arrival = within 2 m of the route end or footprint + 2.5 m **for 0.7 s**.
   Off-route > 8 m → re-route. Choose-by-facing: 1.5 s, never the exhibit you're standing at (that caused the
   "arrived" pop-up loop). Demo walk: 1.3 m/s along the route.
+
+## 6b. Backend integration (11 Oct)
+
+The backend contract is the backend team's INTEGRATION.md (Spring, HTTP + plain WebSocket, port 8081).
+
+- **Host:** `BACKEND_HOST` in Secrets.plist (just the IP), or Settings → Server, beacons and keys (wins).
+- **Login:** session + CSRF, no JWT (`BackendClient`).
+  - Wrong password → error.
+  - Server down or 5xx/403/garbage → **local mode**: you're let in and the app runs on bundled data. It logs in by itself later (credentials in Keychain) and whenever the 30-min session expires.
+  - *Create account* registers (password 8–72 chars), then logs in.
+- **Navigation:** `guide.server` (`PositionSocket`). `GuideModel.navigate`:
+  1. Destination = `MuseumGrid.approaches[key]` (the POI approach point; the server routes to it), else `info.viewingSpot`.
+  2. Straight line at once.
+  3. Local A* route a moment later (`planLocalRoute`).
+  4. `server.setDestination` → the server's `navigation` messages take over (`routeSource = .server`, `route = [position, nextWaypoint]`, `serverTail` = remaining after the waypoint).
+- **Statuses:**
+  - `arrived` → `arrive`.
+  - `blocked` → no route/bloops + spoken reason (`routeBlocked`). For POSITION_* reasons, fall back to local instead (our position is probably in a wall).
+  - `idle`/`cancelled` while we have a target → re-send the destination (max every 5 s, not after a DESTINATION_* error).
+  - Messages about another destination (> 1 m off) are ignored.
+- **Failsafe for routes (`fallBackToLocal`)** kicks in when any of these happens:
+  - the socket leaves `.online`;
+  - no `navigation` for 8 s while server-guided;
+  - an error DESTINATION_OUTSIDE_MAP / DESTINATION_BLOCKED.
+
+  The local route uses the bundled grid and avoids the last known zones. When the server is back, it takes over again by itself (the socket re-sends position + destination).
+- **Alarm (`policy.alarmActive`):**
+  - `startAlarm`: haptic (`alarmEvent`), spoken warning, guidance to the nearest exit (stand-in exhibit `GuideModel.exitKey` = "__exit", `isExit`). The server's exit choice replaces it.
+  - `navigate` and `stopGuidance` refuse during the alarm.
+  - `endAlarm` resumes the previous target.
+  - Exits never count as visited.
+- **Closed exhibits:** a grid POI with `approach: null` is refused by `navigate` with a spoken note. The map was updated on 11 Oct (commit 565284a) and now every exhibit is reachable; the app's copy was updated to match (sha256 93dab8…).
+- **Settings:**
+  - main screen: big mode cards (`ModeCard`), *Tempo lektora* slider (`voice.speed`, plays a sample on release), language row with flags (`AppLanguage.flag`), server status row;
+  - Advanced: server IP + live connection state, "Prowadzenie teraz: z serwera / z mapy w telefonie".
+
+- **Map gestures (11 Oct):** 3D overview and 2D plan: drag to pan + pinch to zoom.
+  - The pan offset is on the floor, so the map keeps following you; the 3D overview stops turning with your head while panned (`heldBearing`).
+  - `RecenterButton` (bottom right, plain style, doesn't stop speech) brings it back.
+  - Pan resets when guidance starts or the style changes.
+  - First person (`.eyeLevel`): pan and zoom are disabled (`.gesture(..., including: .subviews)`), only the AirPods steer; taps still pick pins.
 
 ## 7. Gotchas (learned the hard way)
 
@@ -250,7 +293,7 @@ If looking up moves the Look view down, flip `HeadTracker.pitchSign` to -1.
 - Read `../backend` and `../embedded` to confirm the API paths and that the ESP32s advertise iBeacon frames
   with major/minor (the app assumes that).
 - Pedestrian dead reckoning (CMPedometer steps + AirPods heading) between beacon fixes would smooth positions a lot.
-- Real walking routes need `ROUTE_API_URL`; without it guidance is a straight line through walls.
+- Routes: backend WebSocket when online, bundled grid A* otherwise (not compiled/tested on device yet: build ⌘B, then test with the backend running).
 - Background use (screen locked) stops ranging and head tracking; the app keeps the screen on instead.
 - Nothing has been committed to git since "Initial Commit". Commit when the build is green.
 
