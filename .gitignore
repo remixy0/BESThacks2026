@@ -3,3 +3,4 @@ mobile/resources/
 mobile/resources.zip
 mobile/backups/
 .DS_Store
+.env
