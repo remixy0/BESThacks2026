@@ -1,20 +1,3 @@
-# Museum backend (Spring Boot, Java 25) + PostgreSQL, in one command.
-#
-#   cp .env.example .env          # then set a real POSTGRES_PASSWORD in .env
-#   docker compose up -d --build  # first build takes a few minutes (Maven + tests)
-#
-# Backend:   http://<this computer's IP>:8081   (Mac: ipconfig getifaddr en0)
-#            Swagger: /swagger-ui/index.html · WebSockets: /ws/position, /ws/admin
-# iOS app:   put that IP in Secrets.plist → BACKEND_HOST.
-# Logs:      docker compose logs -f backend
-# Stop:      docker compose down        (accounts stay in the db-data volume)
-# Wipe:      docker compose down -v     (also deletes the database)
-#
-# Make someone an administrator (they must log in again afterwards):
-#   docker compose exec db psql -U museum -d museum -c "UPDATE app_users SET role = 'ADMIN' WHERE email = 'you@example.com';"
-#
-# Only run ONE backend instance: sessions, the alarm, closed zones and live positions live in its memory.
-
 name: museum
 
 services:
@@ -32,10 +15,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
-    # Not published: only the backend talks to the database.
-    # Uncomment to reach it from pgAdmin / IntelliJ on this computer:
-    # ports:
-    #   - "127.0.0.1:5432:5432"
+
 
   backend:
     build:
@@ -52,11 +32,7 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       SERVER_PORT: "8081"
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75"
-      # Behind an HTTPS reverse proxy (https:// + wss://), also set:
-      # SERVER_SERVLET_SESSION_COOKIE_SECURE: "true"
-      # SERVER_FORWARD_HEADERS_STRATEGY: "framework"
     ports:
-      # All network interfaces, so phones on the same Wi-Fi can reach it.
       - "${BACKEND_PORT:-8081}:8081"
 
 volumes:
