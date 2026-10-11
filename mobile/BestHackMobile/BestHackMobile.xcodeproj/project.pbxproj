@@ -259,11 +259,11 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AppInfo.plist;
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Connects to the museum server on this network for logging in, guidance and alarms. Łączy się z serwerem muzeum w tej sieci.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Connects to your team's server on this network for logging in and the beacon positions.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "The museum's Bluetooth beacons show where you are. iPhone only lets apps hear beacons with location access; GPS isn't used.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Say a command to the guide, like the colour of a corner or \"opowiedz\". Mów do przewodnika.";
 				INFOPLIST_KEY_NSMotionUsageDescription = "Head tracking from your AirPods keeps the sound fixed in place while you turn your head.";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Listens for your wake phrase (for example \"Hej przewodniku\") so you can talk to the guide without touching the phone. Nasłuchuje hasła.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Hears the wake phrase (\"Hej Bloop\") so you can talk to the guide hands-free. Rozpoznaje hasło wywołania.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -304,11 +304,11 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AppInfo.plist;
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Connects to the museum server on this network for logging in, guidance and alarms. Łączy się z serwerem muzeum w tej sieci.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Connects to your team's server on this network for logging in and the beacon positions.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "The museum's Bluetooth beacons show where you are. iPhone only lets apps hear beacons with location access; GPS isn't used.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Say a command to the guide, like the colour of a corner or \"opowiedz\". Mów do przewodnika.";
 				INFOPLIST_KEY_NSMotionUsageDescription = "Head tracking from your AirPods keeps the sound fixed in place while you turn your head.";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Listens for your wake phrase (for example \"Hej przewodniku\") so you can talk to the guide without touching the phone. Nasłuchuje hasła.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Hears the wake phrase (\"Hej Bloop\") so you can talk to the guide hands-free. Rozpoznaje hasło wywołania.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;

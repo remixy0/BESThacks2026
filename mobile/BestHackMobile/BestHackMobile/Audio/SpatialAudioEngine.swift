@@ -21,7 +21,7 @@ final class SpatialAudioEngine {
         }
     }
 
-    /// How often and how softly the guide bloops (Settings › Guide). `GuideModel` asks it for the rhythm.
+    /// How the guide bloops: guiding / calm / chill (Settings › Guide › Bloop rhythm). See `BloopStyle`.
     var bloopStyle: BloopStyle = UserDefaults.standard.string(forKey: "audio.bloopStyle").flatMap(BloopStyle.init) ?? .guiding {
         didSet { UserDefaults.standard.set(bloopStyle.rawValue, forKey: "audio.bloopStyle") }
     }
@@ -47,6 +47,7 @@ final class SpatialAudioEngine {
     @ObservationIgnored private let speechPlayer = AVAudioPlayerNode()
     @ObservationIgnored private let monoFormat = AVAudioFormat(standardFormatWithSampleRate: Bloop.sampleRate, channels: 1)!
     @ObservationIgnored private lazy var speechOutput = SpeechOutput(player: speechPlayer, outputFormat: monoFormat)
+    /// Each style has its own sound (bloop, wooden "tok", soft tone).
     @ObservationIgnored private lazy var bloopBuffers: [BloopStyle: AVAudioPCMBuffer] =
         Dictionary(uniqueKeysWithValues: BloopStyle.allCases.map { ($0, Bloop.buffer(for: $0, format: self.monoFormat)) })
     @ObservationIgnored private lazy var chimeBuffer = Bloop.chime(format: monoFormat)
@@ -92,26 +93,24 @@ final class SpatialAudioEngine {
 
     // MARK: - Bloop and chime
 
-    /// One bloop from a floor point. `pitch` 0.5...2 (higher = closer to the right direction), `muffled` for sounds behind you,
-    /// `volume` 0...1 on top of the bloop volume setting (quieter while you're on course).
-    func playBloop(at point: SIMD2<Float>, pitch: Float = 1, muffled: Bool = false, volume: Float = 1) {
-        guard ensureRunning() else { return }
-        bloopPlayer.volume = bloopVolume * min(max(volume, 0), 1)
+    /// One bloop from a floor point. `pitch` 0.5...2 (higher = closer to the right direction), `muffled` for sounds
+    /// behind you, `gain` 0…1 on top of the bloop volume (quieter while you're already going the right way).
+    func playBloop(at point: SIMD2<Float>, pitch: Float = 1, muffled: Bool = false, gain: Float = 1) {
+        guard let sound = bloopBuffers[bloopStyle], ensureRunning() else { return }
+        bloopPlayer.volume = bloopVolume * min(max(gain, 0), 1)
         bloopPlayer.position = point3D(point)
         bloopPlayer.rate = min(max(pitch, 0.5), 2)
         bloopPlayer.occlusion = muffled ? -14 : 0
-        guard let sound = bloopBuffers[bloopStyle] else { return }
         bloopPlayer.scheduleBuffer(sound, at: nil, options: .interrupts)
         startIfNeeded(bloopPlayer)
     }
 
     /// One bloop at an angle from where you face (positive = left), e.g. a left/right test.
-    func playBloop(towardAngle angle: Float, distance: Float = 2, pitch: Float = 1, volume: Float = 1) {
-        playBloop(at: listenerPosition + MuseumGeometry.forward(yaw: listenerYaw + angle) * distance, pitch: pitch, volume: volume)
+    func playBloop(towardAngle angle: Float, distance: Float = 2, pitch: Float = 1, gain: Float = 1) {
+        playBloop(at: listenerPosition + MuseumGeometry.forward(yaw: listenerYaw + angle) * distance, pitch: pitch, gain: gain)
     }
 
     /// The bright two-note chime: "this is the right way". Plays from the direction of `point`.
-    /// `volume` 0…1 on top of the bloop volume setting (softer in the calm styles).
     func playChime(at point: SIMD2<Float>, volume: Float = 1) {
         guard ensureRunning() else { return }
         chimePlayer.volume = min(bloopVolume + 0.1, 1) * min(max(volume, 0), 1)
@@ -123,6 +122,7 @@ final class SpatialAudioEngine {
     /// A short rising beep in front of you: "speak now".
     func playListenCue() {
         guard ensureRunning() else { return }
+        chimePlayer.volume = min(bloopVolume + 0.1, 1)
         chimePlayer.position = point3D(listenerPosition + MuseumGeometry.forward(yaw: listenerYaw) * 1.2)
         chimePlayer.scheduleBuffer(listenBuffer, at: nil, options: .interrupts)
         startIfNeeded(chimePlayer)

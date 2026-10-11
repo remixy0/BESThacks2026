@@ -1,9 +1,9 @@
 import SwiftUI
 
-/// The first screen: log in (or create an account), or try the demo. The language switch sits at the top.
+/// The first screen: log in, or try the demo. The language switch sits at the top.
 ///
-/// Logging in goes to the museum backend. If the server can't be reached or answers with errors, you're let in
-/// anyway and the app works on its own data (see `AccountStore`). Demo = test@test.test / test, same failsafe.
+/// Demo signs in as test@test.test / test. That login still goes to the server, but the app carries on
+/// whether or not the server answers.
 struct LoginView: View {
     let account: AccountStore
     var onSignedIn: () -> Void
@@ -15,12 +15,10 @@ struct LoginView: View {
     @State private var error: String?
     @State private var showServer = false
     @State private var serverDraft = ""
-    /// Creating an account instead of logging in.
-    @State private var isRegistering = false
     @FocusState private var focus: Field?
 
     private var canLogIn: Bool {
-        !account.isWorking && email.contains("@") && (isRegistering ? password.count >= 8 : !password.isEmpty)
+        !account.isWorking && email.contains("@") && !password.isEmpty
     }
 
     var body: some View {
@@ -61,9 +59,8 @@ struct LoginView: View {
                             .padding(.horizontal, 16)
                             .frame(minHeight: 52)
                         Divider().padding(.leading, 16)
-                        SecureField(isRegistering ? tr("Password (8 or more characters)", "Hasło (co najmniej 8 znaków)") : tr("Password", "Hasło"),
-                                    text: $password)
-                            .textContentType(isRegistering ? .newPassword : .password)
+                        SecureField(tr("Password", "Hasło"), text: $password)
+                            .textContentType(.password)
                             .focused($focus, equals: .password)
                             .submitLabel(.go)
                             .onSubmit { if canLogIn { logIn() } }
@@ -85,24 +82,11 @@ struct LoginView: View {
                         if account.isWorking {
                             ProgressView().tint(.white)
                         } else {
-                            Text(isRegistering ? tr("Create account", "Załóż konto") : tr("Log in", "Zaloguj się"))
+                            Text(tr("Log in", "Zaloguj się"))
                         }
                     }
                     .buttonStyle(AppButtonStyle(kind: .primary))
                     .disabled(!canLogIn)
-
-                    Button {
-                        isRegistering.toggle()
-                        error = nil
-                    } label: {
-                        Text(isRegistering ? tr("Already have an account? Log in", "Masz już konto? Zaloguj się")
-                                           : tr("No account yet? Create one", "Nie masz konta? Załóż je"))
-                            .font(Theme.small.weight(.semibold))
-                            .frame(minHeight: 44)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(Theme.accentText)
-                    .disabled(account.isWorking || account.serverURL == nil)
                 }
 
                 HStack(spacing: 12) {
@@ -151,17 +135,21 @@ struct LoginView: View {
         .scrollBounceBehavior(.basedOnSize)
         .background(Theme.page.ignoresSafeArea())
         .alert(tr("Server", "Serwer"), isPresented: $showServer) {
-            TextField("192.168.1.20", text: $serverDraft)
+            TextField(Secrets.backendURL, text: $serverDraft)
                 .autocorrectionDisabled()
                 #if os(iOS)
                 .textInputAutocapitalization(.never)
                 .keyboardType(.URL)
                 #endif
-            Button(tr("Save", "Zapisz")) { account.serverOverride = serverDraft }
+            Button(tr("Save", "Zapisz")) {
+                let typed = serverDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+                // The built-in address needs no override (so a future change of it still applies).
+                account.serverOverride = typed == Secrets.backendURL ? "" : typed
+            }
             Button(tr("Cancel", "Anuluj"), role: .cancel) {}
         } message: {
-            Text(tr("The museum backend: its IP is enough (port 8081 is assumed). Empty = BACKEND_HOST from Secrets.plist.",
-                    "Backend muzeum: wystarczy jego IP (domyślnie port 8081). Puste = BACKEND_HOST z Secrets.plist."))
+            Text(tr("Your team's backend, used for logging in and for the beacon positions.",
+                    "Backend Twojego zespołu: logowanie i pozycje beaconów."))
         }
     }
 
@@ -170,11 +158,7 @@ struct LoginView: View {
         focus = nil
         Task {
             do {
-                if isRegistering {
-                    try await account.register(email: email, password: password)
-                } else {
-                    try await account.signIn(email: email, password: password)
-                }
+                try await account.signIn(email: email, password: password)
                 onSignedIn()
             } catch {
                 self.error = error.localizedDescription
@@ -190,11 +174,11 @@ struct LanguageSwitch: View {
     var body: some View {
         Picker(tr("Language", "Język"), selection: $language.current) {
             ForEach(AppLanguage.allCases) { option in
-                Text("\(option.flag) \(option.short)").tag(option)
+                Text(option.short).tag(option)
             }
         }
         .pickerStyle(.segmented)
-        .frame(width: 150)
+        .frame(width: 110)
         .accessibilityLabel(tr("Language", "Język"))
     }
 }

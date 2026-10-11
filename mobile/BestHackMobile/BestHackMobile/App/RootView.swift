@@ -17,10 +17,8 @@ final class AppModel {
     var calibrationDone = false
 
     private init() {
-        // The guide's server connection logs in through the account (again, when the server's session runs out).
-        let store = self.account
-        guide.server.session = { await store.socketSession() }
-        guide.server.onSessionRejected = { store.sessionExpired() }
+        // The live position WebSocket (`PositionSocket`, /ws/position) isn't wired into GuideModel in this version.
+        // The earlier integration (guide.server + AccountStore.socketSession) is saved in backups/backend.tgz.
     }
 
     /// Loads the beacon positions for the signed-in account.
