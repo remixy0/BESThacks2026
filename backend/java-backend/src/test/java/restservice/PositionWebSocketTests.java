@@ -252,6 +252,84 @@ class PositionWebSocketTests {
         }
     }
 
+    @Test
+    void forwardsHelpToAllAdminsWithAuthenticatedIdentityAndAcknowledgesSender() throws Exception {
+        try (var admin = loggedInClient("admin@example.com");
+             var user = loggedInClient("first@example.com");
+             var other = loggedInClient("second@example.com")) {
+            var admins = new Messages(); var secondAdmin = new Messages();
+            var sender = new Messages(); var observer = new Messages();
+            var adminSocket = adminConnect(admin, admins);
+            var secondAdminSocket = adminConnect(admin, secondAdmin);
+            var userSocket = connect(user, sender); var otherSocket = connect(other, observer);
+            try {
+                // Connecting another admin also broadcasts the positions snapshot to existing admins.
+                admins.next(); admins.next(); admins.next(); secondAdmin.next(); secondAdmin.next();
+                send(userSocket, "{\"x\":-0.5,\"y\":51.9}");
+                sender.next(); admins.next(); secondAdmin.next();
+                send(userSocket, "{\"type\":\"help\"}");
+                var event = json.readTree(admins.next());
+                assertThat(event.get("type").asText()).isEqualTo("help.request");
+                assertThat(event.get("username").asText()).isEqualTo("first@example.com");
+                assertThat(event.get("position").get("x").doubleValue()).isEqualTo(-0.5);
+                assertThat(event.get("position").get("y").doubleValue()).isEqualTo(51.9);
+                assertThat(event.get("receivedAt").asText()).isNotBlank();
+                assertThat(json.readTree(secondAdmin.next())).isEqualTo(event);
+                var ack = json.readTree(sender.next());
+                assertThat(ack.get("type").asText()).isEqualTo("help.accepted");
+                assertThat(ack.get("id")).isEqualTo(event.get("id"));
+                assertThat(ack.get("receivedAt")).isEqualTo(event.get("receivedAt"));
+                assertThat(observer.messages.poll(200, TimeUnit.MILLISECONDS)).isNull();
+
+                send(userSocket, "{\"type\":\"help\",\"x\":2.5,\"y\":3.5}");
+                var explicit = json.readTree(admins.next()); secondAdmin.next(); sender.next();
+                assertThat(explicit.get("position").get("x").doubleValue()).isEqualTo(2.5);
+                assertThat(explicit.get("id")).isNotEqualTo(event.get("id"));
+                // Help coordinates are a snapshot, not a position or navigation update.
+                assertThat(latestPosition("first@example.com").orElseThrow().x()).isEqualTo(-0.5);
+            } finally {
+                userSocket.sendClose(1000, "done").join(); sender.closed.get(5, TimeUnit.SECONDS);
+                otherSocket.sendClose(1000, "done").join(); observer.closed.get(5, TimeUnit.SECONDS);
+                adminSocket.sendClose(1000, "done").join(); admins.closed.get(5, TimeUnit.SECONDS);
+                secondAdminSocket.sendClose(1000, "done").join(); secondAdmin.closed.get(5, TimeUnit.SECONDS);
+            }
+        }
+    }
+
+    @Test
+    void acceptsHelpWithoutLocationAndRejectsMalformedOrSpoofedHelp() throws Exception {
+        try (var user = loggedInClient("first@example.com")) {
+            var sender = new Messages(); var socket = connect(user, sender);
+            try {
+                for (String invalid : new String[]{"{\"type\":\"help\",\"x\":1}",
+                        "{\"type\":\"help\",\"x\":null,\"y\":2}",
+                        "{\"type\":\"help\",\"x\":\"1\",\"y\":2}",
+                        "{\"type\":\"help\",\"x\":1e999,\"y\":2}",
+                        "{\"type\":\"help\",\"username\":\"second@example.com\"}"}) {
+                    send(socket, invalid);
+                    assertThat(json.readTree(sender.next()).get("code").asText()).isEqualTo("INVALID_HELP");
+                }
+                // Acceptance does not depend on an admin being online or a known location.
+                send(socket, "{\"type\":\"help\"}");
+                assertThat(json.readTree(sender.next()).get("type").asText()).isEqualTo("help.accepted");
+                try (var admin = loggedInClient("admin@example.com")) {
+                    var receiver = new Messages(); var adminSocket = adminConnect(admin, receiver);
+                    try {
+                        receiver.next(); receiver.next();
+                        send(socket, "{\"type\":\"help\"}");
+                        var event = json.readTree(receiver.next()); sender.next();
+                        assertThat(event.get("position").isNull()).isTrue();
+                        assertThat(event.get("username").asText()).isEqualTo("first@example.com");
+                    } finally {
+                        adminSocket.sendClose(1000, "done").join(); receiver.closed.get(5, TimeUnit.SECONDS);
+                    }
+                }
+            } finally {
+                socket.sendClose(1000, "done").join(); sender.closed.get(5, TimeUnit.SECONDS);
+            }
+        }
+    }
+
     private WebSocket adminConnect(HttpClient client, Messages listener) throws Exception {
         return client.newWebSocketBuilder().buildAsync(URI.create("ws://localhost:"+port+"/ws/admin"),listener).get(5,TimeUnit.SECONDS);
     }

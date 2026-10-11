@@ -28,5 +28,9 @@ public class PositionStore {
         positions.remove(connectionId);
     }
 
+    public Position forConnection(String connectionId) {
+        return positions.get(connectionId);
+    }
+
     public record Position(String username, double x, double y, Instant receivedAt) {}
 }

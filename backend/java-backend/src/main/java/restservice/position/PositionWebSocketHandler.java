@@ -56,12 +56,28 @@ public class PositionWebSocketHandler extends TextWebSocketHandler {
                 return;
             }
             type = data.has("type") && data.get("type").isString() ? data.get("type").asText() : "position";
+            if (type.equals("help")) {
+                MapPoint location;
+                if (data.size() == 1) {
+                    var latest = positions.forConnection(session.getId());
+                    location = latest == null ? null : new MapPoint(latest.x(), latest.y());
+                } else if (data.size() == 3 && data.has("x") && data.has("y")
+                        && data.get("x").isNumber() && data.get("y").isNumber()
+                        && Double.isFinite(data.get("x").doubleValue()) && Double.isFinite(data.get("y").doubleValue())) {
+                    location = new MapPoint(data.get("x").doubleValue(), data.get("y").doubleValue());
+                } else {
+                    send(session, new PositionError("error", "INVALID_HELP", "Wyślij type: help, opcjonalnie skończone x i y w metrach."));
+                    return;
+                }
+                hub.requestHelp(session, location);
+                return;
+            }
             if (type.equals("cancel") && data.size() == 1) {
                 send(session, navigation.cancel(session.getId()));
                 return;
             }
             if (!type.equals("position") && !type.equals("destination")) {
-                send(session, new PositionError("error", "UNSUPPORTED_MESSAGE", "Dozwolone typy: position, destination, cancel."));
+                send(session, new PositionError("error", "UNSUPPORTED_MESSAGE", "Dozwolone typy: position, destination, cancel, help."));
                 return;
             }
             if ((data.has("type") && (!data.get("type").isString() || data.size() != 3))
